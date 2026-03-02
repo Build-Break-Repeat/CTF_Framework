@@ -3,6 +3,7 @@ Windows Install:
 winget install -e --id Hashicorp.Terraform
 winget install -e --id Microsoft VisualStudioCode
 winget install -e --id Docker.DockerDesktop
+winget install -e --id nginxinc.nginx
 
 
 Github:
