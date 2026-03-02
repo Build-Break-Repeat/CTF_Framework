@@ -1,0 +1,25 @@
+Windows Install:
+
+winget install -e --id Hashicorp.Terraform
+winget install -e --id Microsoft VisualStudioCode
+winget install -e --id Docker.DockerDesktop
+
+
+Github:
+
+git add .
+git commit -m "Version #.#.#"
+git push
+
+
+Terraform:
+
+terraform init
+terraform apply
+terraform destroy
+
+
+Docker:
+
+docker network prune
+docker inspect CONTAINERNAME

@@ -4,7 +4,7 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "3.6.2"
+      version = "~> 3.6"
     }
   }
 }
@@ -60,7 +60,7 @@ resource "docker_container" "kali_desktop" {
   }
 }
 
-#DVWA Challenge Container
+#DVWA Container
 #######################################################################################################################
 resource "docker_image" "dvwa" {
   name         = "vulnerables/web-dvwa:latest"
@@ -75,8 +75,40 @@ resource "docker_container" "dvwa" {
   networks_advanced {
     name = docker_network.lab_network.name
   }
+}
 
-  # No external ports - only accessible from Kali via internal network
+#SQLI-Labs Container
+#######################################################################################################################
+resource "docker_image" "sqli_labs" {
+  name         = "acgpiano/sqli-labs:latest"
+  keep_locally = true
+}
+
+resource "docker_container" "sqli_labs" {
+  name  = "sqli-labs"
+  image = docker_image.sqli_labs.image_id
+  memory = 256
+
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+}
+
+#NOWASP Container
+#######################################################################################################################
+resource "docker_image" "nowasp" {
+  name         = "citizenstig/nowasp:latest"
+  keep_locally = true
+}
+
+resource "docker_container" "nowasp" {
+  name  = "nowasp"
+  image = docker_image.nowasp.image_id
+  memory = 256
+
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
 }
 
 
