@@ -1,0 +1,30 @@
+############# Attacker Containers #############
+
+kasmweb/kali-rolling-desktop:1.16.0 
+operating system for penetration testing, digital forensics, and vulnerability research, contains a collection of tools for analyzing, attacking, and securing networks and applications.
+
+############# Vulnerable Containers #############
+
+vulnerables/web-dvwa
+SQL injection, XSS, command injection, file upload
+
+sqli-labs
+All types of SQL injection (error-based, blind, time-based)
+
+nowasp
+Injection, broken auth, XSS, insecure deserialization
+
+juice-shop
+Vulnerable Web Application, API issues, broken access control
+
+webgoat
+Vulnerable Web Application, insecure coding patterns, broken authentication and authorization
+	
+bwapp
+Vulnerable Web Application, SQL, HTML, iFrame, SSI, OS Command, PHP, XML, XPath, LDAP, Host Header, and SMTP injections 
+
+metasploitable2
+Vulnerable Ubuntu Linux Machine - FTP, SSH, HTTP, SMB, MySQL, multiple exploitable services
+
+dockurr/windows
+Vulnerable Windows Machines - Windows XP, Windows 2008, Windows 7 with different/multiple CVE's

@@ -111,6 +111,70 @@ resource "docker_container" "nowasp" {
   }
 }
 
+#Metasploitable2 Container
+#######################################################################################################################
+resource "docker_image" "metasploitable2" {
+  name         = "tleemcjr/metasploitable2:latest"
+  keep_locally = true
+}
+
+resource "docker_container" "metasploitable2" {
+  name  = "metasploitable2"
+  image = docker_image.metasploitable2.image_id
+  memory = 256
+
+  command = ["bash", "-c", "tail -f /dev/null"]
+
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+}
+
+#OWASP Juice Shop
+#######################################################################################################################
+resource "docker_image" "juice_shop" {
+  name         = "bkimminich/juice-shop:latest"
+  keep_locally = true
+}
+resource "docker_container" "juice_shop" {
+  name  = "juice-shop"
+  image = docker_image.juice_shop.image_id
+  memory = 256
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+}
+
+#WebGoat Container
+#######################################################################################################################
+resource "docker_image" "webgoat" {
+  name         = "webgoat/webgoat:latest"
+  keep_locally = true
+}
+resource "docker_container" "webgoat" {
+  name  = "webgoat"
+  image = docker_image.webgoat.image_id
+  memory = 256
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+}
+
+#bWAPP Container
+#######################################################################################################################
+resource "docker_image" "bwapp" {
+  name         = "raesene/bwapp:latest"
+  keep_locally = true
+}
+resource "docker_container" "bwapp" {
+  name  = "bwapp"
+  image = docker_image.bwapp.image_id
+  memory = 256
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+}
+
 
 # Image/container template (internal network)
 #######################################################################################################################
