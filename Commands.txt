@@ -12,11 +12,16 @@ Ubuntu Install:
 
     Git:
         git remote set-url origin https://github.com/Build-Break-Repeat/CTF_Framework.git
+        git init
+        git pull origin master --allow-unrelated-histories
 
 
 Running Commands:
 
     Git:
+        git pull
+        git fetch
+
         git add .
         git commit -m "Version #.#.#"
         git push
