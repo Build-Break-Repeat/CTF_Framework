@@ -160,9 +160,9 @@ cd $(dirname "$0")/../terraform
 terraform init -input=false
 
 if $NON_INTERACTIVE; then
-	terraform apply -auto-approve
+	sudo terraform apply -auto-approve
 else
-	terraform apply
+	sudo terraform apply
 fi
 
 echo "[*] Deployment Complete"
