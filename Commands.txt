@@ -14,6 +14,7 @@ Ubuntu Install:
         git remote set-url origin https://github.com/Build-Break-Repeat/CTF_Framework.git
         git init
         git pull origin master --allow-unrelated-histories
+        git merge --abort
 
 
 Running Commands:

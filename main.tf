@@ -9,6 +9,11 @@ terraform {
   }
 }
 
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
+}
+
+
 
 #Internal network for the lab
 #######################################################################################################################
