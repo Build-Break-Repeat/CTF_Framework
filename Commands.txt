@@ -1,29 +1,33 @@
-<<<<<<< HEAD
-Windows Install:
+Ubuntu Install:
+    Docker:
+        curl -fsSL https://get.docker.com/ -o get-docker.sh
+        sudo sh get-docker.sh
+        sudo usermod -aG docker $USER
+        docker --version
 
-winget install -e --id Hashicorp.Terraform
-winget install -e --id Microsoft VisualStudioCode
-winget install -e --id Docker.DockerDesktop
-winget install -e --id nginxinc.nginx
+    Terraform:
+        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt update && sudo apt install terraform
 
-
-=======
->>>>>>> 27582ff3f07a62a1c3793f60d91bd2cc9aceb4fc
-Github:
-
-git add .
-git commit -m "Version #.#.#"
-git push
+    Git:
+        git remote set-url origin https://github.com/Build-Break-Repeat/CTF_Framework.git
 
 
-Terraform:
+Running Commands:
 
-terraform init
-terraform apply
-terraform destroy
+    Git:
+        git add .
+        git commit -m "Version #.#.#"
+        git push
 
 
-Docker:
+    Terraform:
+        terraform init
+        terraform apply
+        terraform destroy
 
-docker network prune
-docker inspect CONTAINERNAME
+
+    Docker:
+        docker network prune
+        docker inspect CONTAINERNAME
