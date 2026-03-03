@@ -1,3 +1,63 @@
+# OS / System Files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# Python distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Terraform
 .terraform/
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Environment / Secrets
+.env
+*.env
+secrets/
+credentials/
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.bak
+*.tmp
+
+# Temporary Files
+get-docker.sh
