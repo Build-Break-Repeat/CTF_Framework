@@ -140,6 +140,7 @@ resource "docker_container" "juice_shop" {
   name  = "juice-shop"
   image = docker_image.juice_shop.image_id
   memory = 256
+
   networks_advanced {
     name = docker_network.lab_network.name
   }
@@ -155,6 +156,7 @@ resource "docker_container" "webgoat" {
   name  = "webgoat"
   image = docker_image.webgoat.image_id
   memory = 256
+
   networks_advanced {
     name = docker_network.lab_network.name
   }
@@ -170,10 +172,12 @@ resource "docker_container" "bwapp" {
   name  = "bwapp"
   image = docker_image.bwapp.image_id
   memory = 256
+
   networks_advanced {
     name = docker_network.lab_network.name
   }
 }
+
 
 
 # Image/container template (internal network)
