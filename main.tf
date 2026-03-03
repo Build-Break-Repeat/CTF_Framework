@@ -178,7 +178,7 @@ resource "docker_container" "bwapp" {
   }
 }
 
-# Windows XP - Legacy EOL system (INTERNAL ACCESS ONLY)
+#Windows XP
 #######################################################################################################################
 resource "docker_image" "windows_xp" {
   name         = "dockurr/windows:xp"
@@ -194,15 +194,13 @@ resource "docker_container" "windows_xp" {
     name = docker_network.lab_network.name
   }
 
-  # NO PORTS - only accessible from Kali on internal network
-
   env = [
     "RAM_SIZE=2G",
     "CPU_CORES=2"
   ]
 }
 
-# Windows 7 - EOL corporate workstation (INTERNAL ACCESS ONLY)
+# Windows 7
 #######################################################################################################################
 resource "docker_image" "windows_7" {
   name         = "dockurr/windows:7"
@@ -218,15 +216,13 @@ resource "docker_container" "windows_7" {
     name = docker_network.lab_network.name
   }
 
-  # NO PORTS - only accessible from Kali
-
   env = [
     "RAM_SIZE=2G",
     "CPU_CORES=2"
   ]
 }
 
-# Windows Server 2008 - EOL server (INTERNAL ACCESS ONLY)
+#Windows Server 2008
 #######################################################################################################################
 resource "docker_image" "windows_2008" {
   name         = "dockurr/windows:2008"
@@ -241,8 +237,6 @@ resource "docker_container" "windows_2008" {
   networks_advanced {
     name = docker_network.lab_network.name
   }
-
-  # NO PORTS - only accessible from Kali
 
   env = [
     "RAM_SIZE=2G",
