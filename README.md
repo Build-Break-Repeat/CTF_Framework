@@ -4,13 +4,12 @@
 - Docker
 - Terraform
 - Git
+- Curl
+- Wget
+
 
 ## Deploy
-cd scripts
-./deploy.sh
-
-Access:
-http://localhost:8080
+./scripts/deploy.sh
 
 ## Destroy
-./destroy.sh
+./scripts/destroy.sh
