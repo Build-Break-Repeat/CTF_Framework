@@ -1,0 +1,55 @@
+<!-- 1-23 is pulled from index outside of title-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Register Team - Build Break Repeat CTF</title>
+
+    <link rel="stylesheet" href="../css/UIconfig.css">
+    <script src="../js/UIbehavior.js"></script>
+</head>
+
+<body>
+
+<header>
+    <h1>Build Break Repeat CTF</h1>
+
+    <nav>
+        <a href="../index.html">Home</a> 
+        <a href="register.html">Register</a> 
+        <a href="challenges.html">Challenges</a> 
+        <a href="instructions.html">Instructions</a>
+    </nav>
+</header>
+
+<main>
+
+    <h2>Team Registration</h2>
+
+    <p>
+        Enter your team name and members to begin the CTF.
+    </p>
+    <!--redirect to challenges upon completion-->
+    <!--form that registers and collects team information-->
+    <form action = "challenges.html">
+        <label for=""teamName>Team Name:</label>
+        <br> 
+        <input type="text" id="teanName" name="teamName">
+        <br><br>
+
+        <label for="members">Members (seperate by commas or put one per line):</label>
+        <br>
+        <!--I want a big box becuase people can have long names and gives them space.-->
+        <textarea id="members" name="members" row="5" cols="40"></textarea>
+        <br><br>
+
+        <button type="submit">Register Team</button>
+    </form>
+</main>
+
+
+
+
+</body>
+
+</html>
