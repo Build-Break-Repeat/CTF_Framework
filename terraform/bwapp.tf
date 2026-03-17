@@ -3,8 +3,8 @@ resource "docker_image" "bwapp" {
   keep_locally = true
 }
 resource "docker_container" "bwapp" {
-  name  = "bwapp"
-  image = docker_image.bwapp.image_id
+  name   = "bwapp"
+  image  = docker_image.bwapp.image_id
   memory = 256
 
   ports {

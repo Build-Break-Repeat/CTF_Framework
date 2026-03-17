@@ -4,8 +4,8 @@ resource "docker_image" "nowasp" {
 }
 
 resource "docker_container" "nowasp" {
-  name  = "nowasp"
-  image = docker_image.nowasp.image_id
+  name   = "nowasp"
+  image  = docker_image.nowasp.image_id
   memory = 256
 
   ports {

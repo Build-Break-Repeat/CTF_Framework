@@ -4,8 +4,8 @@ resource "docker_image" "sqli_labs" {
 }
 
 resource "docker_container" "sqli_labs" {
-  name  = "sqli-labs"
-  image = docker_image.sqli_labs.image_id
+  name   = "sqli-labs"
+  image  = docker_image.sqli_labs.image_id
   memory = 256
 
   ports {

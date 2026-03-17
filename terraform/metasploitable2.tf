@@ -4,8 +4,8 @@ resource "docker_image" "metasploitable2" {
 }
 
 resource "docker_container" "metasploitable2" {
-  name  = "metasploitable2"
-  image = docker_image.metasploitable2.image_id
+  name   = "metasploitable2"
+  image  = docker_image.metasploitable2.image_id
   memory = 256
 
   command = ["bash", "-c", "tail -f /dev/null"]

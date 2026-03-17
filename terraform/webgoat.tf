@@ -3,8 +3,8 @@ resource "docker_image" "webgoat" {
   keep_locally = true
 }
 resource "docker_container" "webgoat" {
-  name  = "webgoat"
-  image = docker_image.webgoat.image_id
+  name   = "webgoat"
+  image  = docker_image.webgoat.image_id
   memory = 256
 
   ports {

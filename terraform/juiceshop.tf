@@ -3,8 +3,8 @@ resource "docker_image" "juice_shop" {
   keep_locally = true
 }
 resource "docker_container" "juice_shop" {
-  name  = "juice-shop"
-  image = docker_image.juice_shop.image_id
+  name   = "juice-shop"
+  image  = docker_image.juice_shop.image_id
   memory = 256
 
   ports {
