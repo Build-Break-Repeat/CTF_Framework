@@ -9,7 +9,6 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-
 jobs:
 
   test:
@@ -24,6 +23,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
+
+    - name: Setup Docker
+      uses: docker/setup-buildx-action@v3
 
     - name: Lint shell scripts
       run: |
@@ -48,5 +50,13 @@ jobs:
         git clone https://github.com/bats-core/bats-core.git
         sudo ./bats-core/install.sh /usr/local
 
+    - name: Deploy infrastructure
+      working-directory: terraform
+      run: terraform apply -auto-approve
+
     - name: Run Bash tests
       run: bats tests/
+
+    - name: Destroy infrastructure
+      working-directory: terraform
+      run: terraform destroy -auto-approve
