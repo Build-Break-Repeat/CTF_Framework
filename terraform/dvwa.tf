@@ -8,6 +8,11 @@ resource "docker_container" "dvwa" {
   image  = docker_image.dvwa.image_id
   memory = 256
 
+  ports {
+    internal = 80
+    external = 8001
+  }
+
   networks_advanced {
     name = docker_network.lab_network.name
   }

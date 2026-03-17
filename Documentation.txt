@@ -23,3 +23,20 @@ Vulnerable Ubuntu Linux Machine - FTP, SSH, HTTP, SMB, MySQL, multiple exploitab
 
 dockurr/windows
 Vulnerable Windows Machines - Windows XP, Windows 2008, Windows 7 with different/multiple CVE's
+
+############# Student Access - Container Ports #############
+
+Challenge                   | External Port | Internal Service
+DVWA                        | 8001          | Port 80
+bwapp                       | 8002          | Port 80
+Juice Shop                  | 8003          | Port 3000
+WebGoat                     | 8004          | Port 8080
+NoWASP                      | 8005          | Port 80
+SQLi Labs                   | 8006          | Port 80
+Metasploitable2 (SSH)       | 2222          | Port 22
+Metasploitable2 (HTTP)      | 8007          | Port 80
+Metasploitable2 (SMB)       | 4445          | Port 445
+CTFd Scoreboard             | 8000          | Port 8000
+
+Access Format: http://<server-ip>:<port>
+Example: http://192.168.1.100:8001 for DVWA

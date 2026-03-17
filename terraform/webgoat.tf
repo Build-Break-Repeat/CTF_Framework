@@ -7,6 +7,11 @@ resource "docker_container" "webgoat" {
   image = docker_image.webgoat.image_id
   memory = 256
 
+  ports {
+    internal = 8080
+    external = 8004
+  }
+
   networks_advanced {
     name = docker_network.lab_network.name
   }

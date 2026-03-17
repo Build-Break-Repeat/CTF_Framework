@@ -10,6 +10,19 @@ resource "docker_container" "metasploitable2" {
 
   command = ["bash", "-c", "tail -f /dev/null"]
 
+  ports {
+    internal = 22
+    external = 2222
+  }
+  ports {
+    internal = 80
+    external = 8007
+  }
+  ports {
+    internal = 445
+    external = 4445
+  }
+
   networks_advanced {
     name = docker_network.lab_network.name
   }
