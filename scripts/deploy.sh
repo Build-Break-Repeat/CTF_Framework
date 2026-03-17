@@ -5,6 +5,10 @@ set -e
 NON_INTERACTIVE=false
 AUTO_INSTALL=false
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TERRAFORM_DIR="${SCRIPT_DIR}/../terraform"
+PORT_STATE_FILE="${TERRAFORM_DIR}/firewall_ports.state"
+
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--non-interactive|-n)
@@ -155,14 +159,105 @@ fi
 # Terraform execution
 echo "[*] Running Terraform deployment"
 
-cd $(dirname "$0")/../terraform
+cd "$TERRAFORM_DIR"
 
-terraform init -input=false
+terraform init -input=false -upgrade
 
 if $NON_INTERACTIVE; then
 	sudo terraform apply -auto-approve
 else
 	sudo terraform apply
 fi
+
+# Get Docker container external ports
+get_container_ports() {
+    grep -rhoP 'external\s*=\s*\K\d+' . | sort -u
+}
+
+# Detect firewall type
+detect_firewall() {
+	# Firewalld (CentOS/RHEL)
+	if command -v firewall-cmd >/dev/null 2>&1 && systemctl is-active --quiet firewalld; then
+		echo "firewalld"
+		return
+	fi
+
+	# UFW (Ubuntu/Debian)
+	if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
+		echo "ufw"
+		return
+	fi
+
+	# IPTables (fallback)
+	if command -v iptables >/dev/null 2>&1; then
+		echo "iptables"
+		return
+	fi
+
+	# None detected
+	echo "none"
+}
+
+# Configure Firewalld
+config_firewalld() {
+	for port in "$@"; do
+		echo "[*] Opening port $port via firewalld"
+		sudo firewall-cmd --permanent --add-port ${port}/tcp && record_port_state ${port}
+	done
+
+	sudo firewall-cmd --reload
+}
+
+# Configure UFW
+config_ufw() {
+	for port in "$@"; do
+		echo "[*] Opening port $port via UFW"
+		sudo ufw allow ${port}/tcp && record_port_state ${port}
+	done
+}
+
+# Configure IPTables
+config_iptables() {
+	for port in "$@"; do
+		echo "[*] Opening port $port via iptables"
+		# Check for existing port, create if not exists
+		sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT && record_port_state ${port}
+	done
+}
+
+# Record port state for destruction phase
+record_port_state(){
+	echo "$@" >> "$PORT_STATE_FILE"
+}
+
+# Configure Firewall rules
+config_firewall() {
+	echo "[*] Detect firewall type"
+	FIREWALL=$(detect_firewall)
+
+	if [[ "$FIREWALL" == "none" ]]; then
+		echo "[!] No firewall detected, nothing to configure"
+		return
+	fi
+
+	PORTS=$(get_container_ports)
+
+	echo "[*] Detected container ports: $PORTS"
+
+	case "$FIREWALL" in
+		firewalld)
+			config_firewalld $PORTS
+			;;
+		ufw)	
+			config_ufw $PORTS
+			;;
+		iptables)
+			config_iptables $PORTS
+			;;
+
+	esac
+}
+
+config_firewall
 
 echo "[*] Deployment Complete"
