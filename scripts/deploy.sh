@@ -62,7 +62,7 @@ install_docker() {
         fi
 
 	if ! $AUTO_INSTALL; then 
-		read -p "[?] Docker is not installed. Would you like to install it now? (y/n): " RESPONSE
+		read -r -p "[?] Docker is not installed. Would you like to install it now? (y/n): " RESPONSE
 	else
 		RESPONSE=y
 	fi
@@ -86,13 +86,13 @@ prompt_install() {
 	fi
 
 	if ! $AUTO_INSTALL; then
-		read -p "[?] $1 is not installed. Would you like to install it now? (y/n): " RESPONSE
+		read -r -p "[?] $1 is not installed. Would you like to install it now? (y/n): " RESPONSE
 	else
 		RESPONSE=y
 	fi
 
 	if [[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]; then
-		install_pkg $1
+		install_pkg "$1"
 	else
 		echo "[ERROR] Cannot proceed without $1"
 		exit 1
@@ -145,7 +145,7 @@ if ! systemctl is-active --quiet docker; then
 	elif $AUTO_INSTALL; then
 		RESPONSE=y
 	else
-		read -p "[?] Docker service not running, start now? (y/n)" RESPONSE
+		read -r -p "[?] Docker service not running, start now? (y/n)" RESPONSE
 	fi
 	
 	if [[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]; then
@@ -202,7 +202,7 @@ detect_firewall() {
 config_firewalld() {
 	for port in "$@"; do
 		echo "[*] Opening port $port via firewalld"
-		sudo firewall-cmd --permanent --add-port ${port}/tcp && record_port_state ${port}
+		sudo firewall-cmd --permanent --add-port "${port}/tcp" && record_port_state "${port}"
 	done
 
 	sudo firewall-cmd --reload
@@ -212,7 +212,7 @@ config_firewalld() {
 config_ufw() {
 	for port in "$@"; do
 		echo "[*] Opening port $port via UFW"
-		sudo ufw allow ${port}/tcp && record_port_state ${port}
+		sudo ufw allow "${port}/tcp" && record_port_state "${port}"
 	done
 }
 
@@ -221,7 +221,7 @@ config_iptables() {
 	for port in "$@"; do
 		echo "[*] Opening port $port via iptables"
 		# Check for existing port, create if not exists
-		sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT && record_port_state ${port}
+		sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT && record_port_state "${port}"
 	done
 }
 
@@ -246,13 +246,13 @@ config_firewall() {
 
 	case "$FIREWALL" in
 		firewalld)
-			config_firewalld $PORTS
+			config_firewalld "$PORTS"
 			;;
 		ufw)	
-			config_ufw $PORTS
+			config_ufw "$PORTS"
 			;;
 		iptables)
-			config_iptables $PORTS
+			config_iptables "$PORTS"
 			;;
 
 	esac

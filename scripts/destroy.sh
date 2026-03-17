@@ -39,7 +39,7 @@ detect_firewall() {
 config_firewalld() {
 	while read -r port; do
 		echo "[*] Removing firewalld rule for port $port"
-		sudo firewall-cmd --permanent --remove-port ${port}/tcp
+		sudo firewall-cmd --permanent --remove-port "${port}/tcp"
 	done < "$PORT_STATE_FILE"
 	
 	sudo firewall-cmd --reload
@@ -49,7 +49,7 @@ config_firewalld() {
 config_ufw() {
 	while read -r port; do
                 echo "[*] Removing UFW rule for port $port"
-                sudo ufw delete allow ${port}/tcp
+                sudo ufw delete allow "${port}/tcp"
         done < "$PORT_STATE_FILE"
 }
 
