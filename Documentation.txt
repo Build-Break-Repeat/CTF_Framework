@@ -1,8 +1,3 @@
-############# Attacker Containers #############
-
-kasmweb/kali-rolling-desktop:1.16.0 
-operating system for penetration testing, digital forensics, and vulnerability research, contains a collection of tools for analyzing, attacking, and securing networks and applications.
-
 ############# Vulnerable Containers #############
 
 vulnerables/web-dvwa

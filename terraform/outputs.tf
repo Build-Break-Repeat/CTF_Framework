@@ -1,6 +1,5 @@
 output "challenge_containers" {
   value = [
-    docker_container.kali_desktop.name,
     docker_container.dvwa.name,
     docker_container.sqli_labs.name,
     docker_container.nowasp.name,
