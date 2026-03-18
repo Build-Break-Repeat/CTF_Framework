@@ -221,7 +221,10 @@ config_iptables() {
 	for port in "$@"; do
 		echo "[*] Opening port $port via iptables"
 		# Check for existing port, create if not exists
-		sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT && record_port_state "${port}"
+		if ! sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null; then
+		    sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT
+		    record_port_state "$port"
+		fi
 	done
 }
 
@@ -240,19 +243,20 @@ config_firewall() {
 		return
 	fi
 
-	PORTS=$(get_container_ports)
+	#PORTS=$(get_container_ports)
+	mapfile -t PORTS < <(get_container_ports)
 
 	echo "[*] Detected container ports: $PORTS"
 
 	case "$FIREWALL" in
 		firewalld)
-			config_firewalld "$PORTS"
+			config_firewalld "${PORTS[@]}"
 			;;
 		ufw)	
-			config_ufw "$PORTS"
+			config_ufw "${PORTS[@]}"
 			;;
 		iptables)
-			config_iptables "$PORTS"
+			config_iptables "${PORTS[@]}"
 			;;
 
 	esac
