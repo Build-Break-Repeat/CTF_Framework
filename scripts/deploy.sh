@@ -169,11 +169,6 @@ else
 	sudo terraform apply
 fi
 
-# Get Docker container external ports
-get_container_ports() {
-    grep -rhoP 'external\s*=\s*\K\d+' . | sort -u
-}
-
 # Detect firewall type
 detect_firewall() {
 	# Firewalld (CentOS/RHEL)
@@ -205,6 +200,7 @@ config_firewalld() {
 		sudo firewall-cmd --permanent --add-port "${port}/tcp" && record_port_state "${port}"
 	done
 
+	echo "[*] Reloading firewalld with rule changes"
 	sudo firewall-cmd --reload
 }
 
@@ -243,8 +239,12 @@ config_firewall() {
 		return
 	fi
 
-	#PORTS=$(get_container_ports)
-	mapfile -t PORTS < <(get_container_ports)
+	# For reference:
+	# docker ps --format "{{.Ports}}"    Get list of ports
+	# grep -oE '[0-9]+->'  		     Only get host ports
+	# sed 's/->//'			     Remove the -> characters
+	# grep -E '^[0-9]+$'		     Make sure there's no empty strings
+	mapfile -t PORTS < <(docker ps --format "{{.Ports}}" | grep -oE '[0-9]+->' | sed 's/->//' | grep -E '^[0-9]+$') 
 
 	echo "[*] Detected container ports: $PORTS"
 

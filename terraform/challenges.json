@@ -1,0 +1,58 @@
+{
+  "challenges": {
+    "dvwa": {
+      "image": "vulnerables/web-dvwa:latest",
+      "memory": 256,
+      "ports": [{
+	"internal": 80, "external": 8001
+      }],
+      "env": []
+    },
+    "juice_shop": {
+      "image": "bkimminich/juice-shop:latest",
+      "memory": 256,
+      "ports": [{ "internal": 3000, "external": 8003 }],
+      "env": []
+    },
+    "webgoat": {
+      "image": "webgoat/webgoat:latest",
+      "memory": 256,
+      "ports": [{ "internal": 8080, "external": 8004 }],
+      "env": []
+    },
+    "slqi": {
+      "image": "acgpiano/sqli-labs:latest",
+      "memory": 256,
+      "ports": [{ "internal": 80, "external": 8006 }],
+      "env": []
+    },
+    "nowasp": {
+      "image": "citizenstig/nowasp:latest",
+      "memory": 256,
+      "ports": [{ "internal": 80, "external": 8005 }],
+      "env": []
+    },
+    "bwapp": {
+      "image": "raesene/bwapp:latest",
+      "memory": 256,
+      "ports": [{ "internal": 80, "external": 8002 }],
+      "env": []
+    },
+    "metasploitable": {
+      "image": "tleemcjr/metasploitable2:latest",
+      "memory": 256,
+      "command": ["bash", "-c", "tail -f /dev/null"],
+      "ports": [
+          { "internal": 22, "external": 2222 },
+          { "internal": 80, "external": 8007 },
+          { "internal": 445, "external": 4445 }
+        ],
+      "env": []
+    }
+
+
+
+
+
+  }
+}
