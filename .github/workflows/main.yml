@@ -52,8 +52,8 @@ jobs:
 
     - name: Deploy infrastructure
       run: | 
-	chmod +x scripts/deploy.sh
-	sudo scripts/deploy.sh --auto-install --non-interactive
+        chmod +x scripts/deploy.sh
+        sudo scripts/deploy.sh --auto-install --non-interactive
 
     - name: Run Bash tests
       run: bats tests/
