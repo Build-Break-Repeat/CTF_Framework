@@ -246,8 +246,6 @@ config_firewall() {
 	# grep -E '^[0-9]+$'		     Make sure there's no empty strings
 	mapfile -t PORTS < <(docker ps --format "{{.Ports}}" | grep -oE '[0-9]+->' | sed 's/->//' | grep -E '^[0-9]+$') 
 
-	echo "[*] Detected container ports: $PORTS"
-
 	case "$FIREWALL" in
 		firewalld)
 			config_firewalld "${PORTS[@]}"
