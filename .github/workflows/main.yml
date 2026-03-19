@@ -50,22 +50,6 @@ jobs:
         git clone https://github.com/bats-core/bats-core.git
         sudo ./bats-core/install.sh /usr/local
 
-    - name: Deploy infrastructure
-      run: | 
-        chmod +x scripts/deploy.sh
-        sudo scripts/deploy.sh --auto-install --non-interactive
-
     - name: Run Bash tests
       run: bats tests/
 
-    - name: Get exposed ports
-      run: |
-        terraform -chdir=terraform show -json \
-          | jq -r '.values.root_module.resources[]
-          | select(.type=="docker_container")
-          | .values.ports[].external' \
-          | sort -u > ports.txt
-
-    - name: Destroy infrastructure
-      working-directory: terraform
-      run: terraform destroy -auto-approve
