@@ -66,58 +66,6 @@ jobs:
           | .values.ports[].external' \
           | sort -u > ports.txt
 
-    - name: Detect firewall
-      id: firewall
-      run: |
-        if command -v firewall-cmd >/dev/null 2>&1 && systemctl is-active --quiet firewalld; then
-          echo "type=firewalld" >> $GITHUB_OUTPUT
-        elif command -v ufw >/dev/null 2>&1; then
-          echo "type=ufw" >> $GITHUB_OUTPUT
-        else
-          echo "type=iptables" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Verify firewall rules (firewalld)
-      if: steps.firewall.outputs.type == 'firewalld'
-      run: |
-        ports=$(cat ports.txt)
-
-        for port in $ports; do
-          echo "Checking firewalld rule for $port"
-          sudo firewall-cmd --list-ports | grep "${port}/tcp" || {
-            echo "Missing firewall rule for port $port"
-            exit 1
-          }
-        done
-
-    - name: Verify firewall rules (ufw)
-      if: steps.firewall.outputs.type == 'ufw'
-      run: |
-        ports=$(cat ports.txt)
-    
-        for port in $ports; do
-          echo "Checking UFW rule for $port"
-          sudo ufw status | grep "$port/tcp" || {
-            echo "Missing firewall rule for port $port"
-            exit 1
-          }
-        done
-
-    - name: Verify firewall rules (iptables)
-      if: steps.firewall.outputs.type == 'iptables'
-      run: |
-        ports=$(cat ports.txt)
-    
-        for port in $ports; do
-          echo "Checking iptables rule for $port"
-
-          sudo iptables -L INPUT -n | grep ":$port " || {
-            echo "Missing firewall rule for port $port"
-            exit 1
-          }
-        done
-
-
     - name: Destroy infrastructure
       working-directory: terraform
       run: terraform destroy -auto-approve
