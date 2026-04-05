@@ -23,7 +23,7 @@ nav {
 }
 
 nav a {
-    color: #c4b5fd;
+    color: #c4b7fa;
     margin: 0 15px;
     text-decoration: none;
     font-weight: bold;
@@ -54,7 +54,7 @@ h2 {
 }
 
 h3 {
-    color: #a78bfa;
+    color: #6744d1;
 }
 /*ordered and unordered list style*/
 ul, ol {
@@ -62,7 +62,7 @@ ul, ol {
 }
 
 button {
-    background-color: #7c3aed;
+    background-color: #6744d1;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -72,4 +72,12 @@ button {
 
 button:hover {
     background-color: #6d28d9;
+}
+
+.challenge-card {
+    background-color: #9484d1;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }

@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "DVWA",
+    "description": "Practice web exploitation using the Damn Vulnerable Web Application.",
+    "type": "Web",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 2,
+    "name": "SQL Injection",
+    "description": "Exploit database queries to bypass authentication and extract data.",
+    "type": "Database",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 3,
+    "name": "File Explorer",
+    "description": "Locate hidden files and uncover sensitive information.",
+    "type": "File",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 4,
+    "name": "Authentication Bypass",
+    "description": "Find weaknesses in login systems to gain unauthorized access.",
+    "type": "Web",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 5,
+    "name": "API Exploit",
+    "description": "Interact with insecure APIs to retrieve protected data.",
+    "type": "API",
+    "difficulty": "Hard"
+  },
+  {
+    "id": 6,
+    "name": "Command Injection",
+    "description": "Execute system-level commands through vulnerable inputs.",
+    "type": "System",
+    "difficulty": "Hard"
+  }
+]
