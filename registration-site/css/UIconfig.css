@@ -74,10 +74,20 @@ button:hover {
     background-color: #6d28d9;
 }
 
+.challenge-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
 .challenge-card {
-    background-color: #9484d1;
+    background-color: #5f7392;
     padding: 20px;
     border-radius: 10px;
-    margin: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: 0.2s;
+}
+
+.challenge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
