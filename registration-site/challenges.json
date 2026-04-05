@@ -2,43 +2,40 @@
   {
     "id": 1,
     "name": "DVWA",
-    "description": "Practice web exploitation using the Damn Vulnerable Web Application.",
+    "description": "Damn Vulnerable Web Application focused on web exploitation.",
     "type": "Web",
     "difficulty": "Easy"
+  
   },
   {
     "id": 2,
-    "name": "SQL Injection",
-    "description": "Exploit database queries to bypass authentication and extract data.",
-    "type": "Database",
+    "name": "Juice Shop",
+    "description": "Modern vulnerable web application with multiple security issues.",
+    "type": "Web",
     "difficulty": "Medium"
+
   },
   {
     "id": 3,
-    "name": "File Explorer",
-    "description": "Locate hidden files and uncover sensitive information.",
-    "type": "File",
-    "difficulty": "Easy"
+    "name": "WebGoat",
+    "description": "Interactive insecure web application used for security training.",
+    "type": "Web",
+    "difficulty": "Medium"
+
   },
   {
     "id": 4,
-    "name": "Authentication Bypass",
-    "description": "Find weaknesses in login systems to gain unauthorized access.",
+    "name": "bWAPP",
+    "description": "Buggy web application with many common vulnerabilities.",
     "type": "Web",
-    "difficulty": "Medium"
+    "difficulty": "Easy"
+  
   },
   {
     "id": 5,
-    "name": "API Exploit",
-    "description": "Interact with insecure APIs to retrieve protected data.",
-    "type": "API",
-    "difficulty": "Hard"
-  },
-  {
-    "id": 6,
-    "name": "Command Injection",
-    "description": "Execute system-level commands through vulnerable inputs.",
-    "type": "System",
+    "name": "SQLi Labs",
+    "description": "Challenge environment designed for SQL injection practice.",
+    "type": "Database",
     "difficulty": "Hard"
   }
 ]
