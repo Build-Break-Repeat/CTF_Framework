@@ -12,7 +12,8 @@ async function loadChallenges() {
     try {
         //this is the location of the information
         const response = await fetch("../challenges.json");
-        const challenges =await response.json();
+        const data =await response.json();
+        const challenges = data.challenges;
 
         const container = document.getElementById("challenge-container");
 
@@ -39,7 +40,7 @@ function createChallengesCard(challenge) {
     div.innerHTML = `
     <h3>${challenge.name}</h3>
     <p>${challenge.description}</p>
-    <span class="tag">${challenge.type}</span>
+    <span class="tag">${challenge.category}</span>
     <button onclick= "startChallenge('${challenge.name}')">
         Start Challenge
     </button>

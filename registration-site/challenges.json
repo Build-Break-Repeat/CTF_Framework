@@ -1,41 +1,136 @@
-[
-  {
-    "id": 1,
-    "name": "DVWA",
-    "description": "Damn Vulnerable Web Application focused on web exploitation.",
-    "type": "Web",
-    "difficulty": "Easy"
-  
+{
+  "event":{
+    "name" : "Spring 2026 CTF",
+    "teams": 8,
+    "flag_prefix": "CTF",
+    "secret_seed": "random-string"
   },
-  {
-    "id": 2,
-    "name": "Juice Shop",
-    "description": "Modern vulnerable web application with multiple security issues.",
-    "type": "Web",
-    "difficulty": "Medium"
-
-  },
-  {
-    "id": 3,
-    "name": "WebGoat",
-    "description": "Interactive insecure web application used for security training.",
-    "type": "Web",
-    "difficulty": "Medium"
-
-  },
-  {
-    "id": 4,
-    "name": "bWAPP",
-    "description": "Buggy web application with many common vulnerabilities.",
-    "type": "Web",
-    "difficulty": "Easy"
-  
-  },
-  {
-    "id": 5,
-    "name": "SQLi Labs",
-    "description": "Challenge environment designed for SQL injection practice.",
-    "type": "Database",
-    "difficulty": "Hard"
-  }
-]
+  "challenges": [
+    {
+      "id": "dvwa",
+      "name" : "Damn Vulnerable Web Application",
+      "description": "A web application designed to be vulnerable to common web attacks.",
+      "category": "web",
+      "points": 100,
+      "image": "vulnerables/web-dvwa:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "owner": "root",
+        "permissions": "0600"
+      },
+      "ports": [{
+	"internal": 80, "external": 8001
+      }],
+      "environment": []
+    },
+    {
+      "id": "juice-shop",
+      "name" : "OWASP Juice Shop",
+      "description": "A modern web application with a wide range of vulnerabilities.",
+      "category": "web",
+      "points": 100,
+      "image": "bkimminich/juice-shop:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [{ "internal": 3000, "external": 8003 }],
+      "environment": []
+    },
+    {
+      "id": "webgoat",
+      "name": "WebGoat",
+      "description": "A deliberately vulnerable web application for security training.",
+      "category": "web",
+      "points": 100,
+      "image": "webgoat/webgoat:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [{ "internal": 8080, "external": 8004 }],
+      "environment": []
+    },
+    {
+      "id": "sqli",
+      "name": "SQL Injection Lab",
+      "description": "A lab for practicing SQL injection techniques.",
+      "category": "web",
+      "points": 100,
+      "image": "acgpiano/sqli-labs:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [{ "internal": 80, "external": 8006 }],
+      "environment": []
+    },
+    {
+      "id": "nowasp",
+      "name": "NoWASP",
+      "description": "A web application designed to be vulnerable to common web attacks.",
+      "category": "web",
+      "points": 100,
+      "image": "citizenstig/nowasp:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [{ "internal": 80, "external": 8005 }],
+      "environment": []
+    },
+    {
+      "id": "bwapp",
+      "name": "BWAPP",
+      "description": "A web application designed to be vulnerable to common web attacks.",
+      "category": "web",
+      "points": 100,
+      "image": "raesene/bwapp:latest",
+      "memory": 256,
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [{ "internal": 80, "external": 8002 }],
+      "environment": []
+    },
+    {
+      "id": "metasploitable",
+      "name": "Metasploitable",
+      "description": "A vulnerable Linux distribution for security testing.",
+      "category": "vulnerable",
+      "points": 200,
+      "image": "tleemcjr/metasploitable2:latest",
+      "memory": 256,
+      "command": ["bash", "-c", "tail -f /dev/null"],
+      "flag":{
+        "type": "file",
+        "path": "/flag.txt",
+        "permissions": "0600",
+        "owner": "root"
+      },
+      "ports": [
+          { "internal": 22, "external": 2222 },
+          { "internal": 80, "external": 8007 },
+          { "internal": 445, "external": 4445 }
+        ],
+      "environment": []
+    }
+  ]
+}
