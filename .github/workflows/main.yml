@@ -19,10 +19,17 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck jq
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
 
     - name: Setup Docker
       uses: docker/setup-buildx-action@v3
@@ -49,6 +56,9 @@ jobs:
       run: |
         git clone https://github.com/bats-core/bats-core.git
         sudo ./bats-core/install.sh /usr/local
+
+    - name: Run Python tests
+      run: pytest tests/test_flags.py
 
     - name: Run Bash tests
       run: bats tests/

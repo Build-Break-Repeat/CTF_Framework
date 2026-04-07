@@ -31,7 +31,20 @@ def parse_args():
 def load_challenges(challenge_file):
     with Path(challenge_file).open("r", encoding="utf-8") as handle:
         challenge_data = json.load(handle)
-    return sorted(challenge_data.get("challenges", {}).keys())
+
+    challenges = challenge_data.get("challenges", {})
+
+    if isinstance(challenges, dict):
+        return dict(sorted(challenges.items()))
+
+    if isinstance(challenges, list):
+        return {
+            challenge["id"]: challenge
+            for challenge in sorted(challenges, key=lambda challenge: challenge.get("id", ""))
+            if "id" in challenge
+        }
+
+    raise SystemExit("Invalid challenge format in challenge file")
 
 
 def iter_flag_files(flags_dir, challenge_name):
@@ -42,10 +55,57 @@ def iter_flag_files(flags_dir, challenge_name):
     yield from sorted(flags_dir.glob(f"{challenge_name}_team*.txt"))
 
 
-def inject_flag_file(container, flag_file):
+def get_team_number(flag_file):
+    name = flag_file.stem
+    if "team" not in name:
+        return 1
+
+    team_text = name.split("team", 1)[1]
+    digits = ""
+    for char in team_text:
+        if char.isdigit():
+            digits += char
+        else:
+            break
+
+    if digits:
+        return int(digits)
+
+    return 1
+
+
+def get_destination(challenge_name, challenge_config, flag_file):
+    flag_config = challenge_config.get("flag", {})
+    path_template = flag_config.get("path")
+
+    if not path_template:
+        return f"/flags/{flag_file.name}"
+
+    destination = path_template.format(
+        challenge=challenge_name,
+        team=get_team_number(flag_file),
+        file=flag_file.name,
+    )
+
+    if destination.endswith("/"):
+        return f"{destination}{flag_file.name}"
+
+    return destination
+
+
+def inject_flag_file(container, challenge_name, challenge_config, flag_file):
     flag_value = flag_file.read_text(encoding="utf-8").strip()
-    destination = f"/flags/{flag_file.name}"
-    command = f"mkdir -p /flags && cat > {destination!s} <<'EOF'\n{flag_value}\nEOF"
+    destination = get_destination(challenge_name, challenge_config, flag_file)
+    flag_config = challenge_config.get("flag", {})
+    destination_dir = str(Path(destination).parent).replace("\\", "/")
+    command = f"mkdir -p '{destination_dir}' && cat > '{destination}' <<'EOF'\n{flag_value}\nEOF"
+
+    if flag_config.get("permissions"):
+        command += f" && chmod {flag_config['permissions']} '{destination}'"
+
+    if flag_config.get("owner"):
+        command += f" && chown {flag_config['owner']} '{destination}'"
+
     result = container.exec_run(["sh", "-c", command])
     return result.exit_code, destination
 
@@ -57,12 +117,12 @@ def main():
     if not flags_dir.exists():
         raise SystemExit(f"Flag directory not found: {flags_dir}")
 
-    client = docker.from_env()
     challenges = load_challenges(args.challenge_file)
+    client = docker.from_env()
 
     print(f"\nInjecting flags from {flags_dir}...\n")
 
-    for challenge_name in challenges:
+    for challenge_name, challenge_config in challenges.items():
         flag_files = list(iter_flag_files(flags_dir, challenge_name))
         if not flag_files:
             print(f"{challenge_name} - no flag files found")
@@ -77,7 +137,7 @@ def main():
         print(f"{challenge_name}:")
         for flag_file in flag_files:
             try:
-                exit_code, destination = inject_flag_file(container, flag_file)
+                exit_code, destination = inject_flag_file(container, challenge_name, challenge_config, flag_file)
             except docker.errors.DockerException as error:
                 print(f"  FAILED - {flag_file.name}: {error}")
                 continue

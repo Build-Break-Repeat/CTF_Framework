@@ -50,7 +50,15 @@ def load_json_file(file_path):
 
 def load_challenges(challenge_file):
     challenge_data = load_json_file(challenge_file)
-    return sorted(challenge_data.get("challenges", {}).keys())
+    challenges = challenge_data.get("challenges", {})
+
+    if isinstance(challenges, dict):
+        return sorted(challenges.keys())
+
+    if isinstance(challenges, list):
+        return sorted(challenge["id"] for challenge in challenges if "id" in challenge)
+
+    raise SystemExit("Invalid challenge format in challenge file")
 
 
 def load_presets(preset_file):

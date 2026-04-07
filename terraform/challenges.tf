@@ -1,5 +1,6 @@
 locals {
-  challenges = jsondecode(file("${path.module}/challenges.json")).challenges
+  raw_challenges = jsondecode(file("${path.module}/challenges.json")).challenges
+  challenges     = try({ for challenge in local.raw_challenges : challenge.id => challenge }, local.raw_challenges)
 }
 
 resource "docker_image" "challenge_images" {
@@ -30,5 +31,5 @@ resource "docker_container" "challenge_containers" {
     }
   }
 
-  env = lookup(each.value, "env", [])
+  env = lookup(each.value, "env", lookup(each.value, "environment", []))
 }
