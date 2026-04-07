@@ -1,5 +1,5 @@
 locals {
-  raw_challenges = jsondecode(file("${path.module}/challenges.json")).challenges
+  raw_challenges = jsondecode(file("${path.module}/../challenges.json")).challenges
   challenges     = try({ for challenge in local.raw_challenges : challenge.id => challenge }, local.raw_challenges)
 }
 
