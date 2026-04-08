@@ -7,7 +7,7 @@ import docker
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_CHALLENGE_FILE = SCRIPT_DIR.parent / "terraform" / "challenges.json"
+DEFAULT_CHALLENGE_FILE = SCRIPT_DIR.parent / "terraform" / "config.json"
 DEFAULT_FLAGS_DIR = SCRIPT_DIR.parent / "flags"
 
 

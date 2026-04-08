@@ -29,7 +29,7 @@ Inject generated flags into the running challenge containers:
 python3 scripts/injectflags.py
 
 Current workflow:
-1. Challenge names come from terraform/challenges.json.
+1. Challenge names come from terraform/config.json.
 2. Generated files are written under flags/<challenge-name>/team#.txt.
 3. injectflags.py copies those team files into matching Docker containers.
 4. By default, flags go to /flags inside each container.

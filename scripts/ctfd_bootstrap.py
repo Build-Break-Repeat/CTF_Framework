@@ -10,7 +10,7 @@ import time
 CTFD_CONTAINER = "ctfd"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOKEN_OUTPUT_FILE = os.path.join(BASE_DIR, "terraform", "ctfd_token.txt")
-CONFIG_FILE = "../challenges.json"
+CONFIG_FILE = "../config.json"
 MAX_RETRIES = 30
 SLEEP_SECONDS = 3
 DEBUG = True
