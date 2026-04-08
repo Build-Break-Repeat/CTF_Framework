@@ -159,8 +159,17 @@ fi
 # Terraform execution
 echo "[*] Running Terraform deployment"
 
-cd "$TERRAFORM_DIR"
+cd "$TERRAFORM_DIR/bootstrap"
+terraform init -input=false -upgrade
 
+# Initial bootstrap of Terraform
+sudo terraform apply -auto-approve
+
+# Bootstrap CTFd and get API key
+cd "$SCRIPT_DIR"
+python3 ctfd_bootstrap.py
+
+cd "$TERRAFORM_DIR/full"
 terraform init -input=false -upgrade
 
 if $NON_INTERACTIVE; then

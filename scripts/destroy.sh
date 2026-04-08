@@ -6,7 +6,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TERRAFORM_DIR="${SCRIPT_DIR}/../terraform"
 PORT_STATE_FILE="${TERRAFORM_DIR}/firewall_ports.state"
 
-cd "$TERRAFORM_DIR"
+
+# Terraform execution
+echo "[*] Running Terraform destroy"
+
+cd "$TERRAFORM_DIR/full"
+
+# Destroy challenges
+sudo terraform destroy -auto-approve
+
+# Remove API key
+rm -f "$TERRAFORM_DIR/ctfd_token.txt"
+
+cd "$TERRAFORM_DIR/bootstrap"
 
 # Destroy the environment
 sudo terraform destroy -auto-approve

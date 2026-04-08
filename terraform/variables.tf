@@ -1,1 +1,0 @@
-# Future variables go here

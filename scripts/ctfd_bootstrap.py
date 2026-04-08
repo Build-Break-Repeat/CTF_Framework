@@ -8,11 +8,12 @@ import time
 # CONFIG
 # =========================
 CTFD_CONTAINER = "ctfd"
-TOKEN_OUTPUT_FILE = "terraform/ctfd_token.txt"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOKEN_OUTPUT_FILE = os.path.join(BASE_DIR, "terraform", "ctfd_token.txt")
 CONFIG_FILE = "../challenges.json"
 MAX_RETRIES = 30
 SLEEP_SECONDS = 3
-DEBUG = False
+DEBUG = True
 
 
 def debug(msg):
@@ -134,14 +135,9 @@ else:
 
 
 # =========================
-# CTFd SETUP (replaces the web setup wizard)
+# CTFd SETUP 
 # =========================
 def run_setup(cfg: dict):
-    """
-    Replicates every set_config() call made by the /setup POST route in
-    CTFd/views.py, plus creates the mandatory index page.  Also marks
-    setup as complete so CTFd stops redirecting to /setup.
-    """
     print("[*] Running CTFd setup...")
 
     event = cfg["event"]
@@ -205,77 +201,6 @@ print("SETUP_DONE")
         print("[ERROR] Setup sentinel not found in output")
         sys.exit(1)
 
-
-# =========================
-# CREATE CHALLENGES
-# =========================
-def create_challenges(cfg: dict):
-    """
-    Creates one CTFd challenge per entry in config.json["challenges"].
-    Each challenge gets a static placeholder flag: prefix{challenge-id}
-    (e.g. CTF{dvwa}). This is replaced with the real flag value after the
-    flag-injection step reads it from the running challenge container.
-
-    Idempotent: challenges with the same name are skipped, not duplicated.
-    """
-    print("[*] Creating challenges...")
-
-    flag_prefix = cfg["event"].get("flag_prefix", "CTF")
-    challenges = cfg.get("challenges", [])
-
-    challenges_json = json.dumps(challenges)
-
-    script = f"""
-import json
-import warnings
-warnings.filterwarnings("ignore", message=".*incompatible polymorphic identity.*")
-from CTFd.models import Challenges, Flags, db
-
-challenges = json.loads({repr(challenges_json)})
-flag_prefix = {repr(flag_prefix)}
-
-created = 0
-skipped = 0
-for ch in challenges:
-    name = ch["name"]
-    existing = Challenges.query.filter_by(name=name).first()
-    if existing:
-        skipped += 1
-        continue
-
-    challenge = Challenges(
-        name=name,
-        description=ch.get("description", ""),
-        value=ch.get("points", 100),
-        category=ch.get("category", "misc"),
-        type="standard",
-        state="visible",
-    )
-    db.session.add(challenge)
-    db.session.flush()  # populate challenge.id before creating the flag
-
-    # Placeholder flag: prefix{{challenge-id}}, e.g. CTF{{dvwa}}
-    flag_value = flag_prefix + "{{" + ch["id"] + "}}"
-    flag = Flags(
-        challenge_id=challenge.id,
-        type="static",
-        content=flag_value,
-        data="",
-    )
-    db.session.add(flag)
-    created += 1
-
-db.session.commit()
-print(f"CHALLENGES_DONE created={{created}} skipped={{skipped}}")
-"""
-    output = run_ctfd_python(script)
-    check_output(output, "create_challenges")
-    for line in output.splitlines():
-        if line.startswith("CHALLENGES_DONE"):
-            print(f"[+] Challenges: {line.replace('CHALLENGES_DONE ', '')}")
-            return
-    print("[ERROR] Challenge sentinel not found in output")
-    sys.exit(1)
 
 
 # =========================
@@ -345,7 +270,6 @@ def main():
 
     create_admin()
     run_setup(cfg)
-    create_challenges(cfg)
     token = generate_token()
     save_token(token)
     print("[+] Bootstrap complete")
