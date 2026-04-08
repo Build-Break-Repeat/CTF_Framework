@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 CREATE_FLAGS_SCRIPT = ROOT_DIR / "scripts" / "createflags.py"
 INJECT_FLAGS_SCRIPT = ROOT_DIR / "scripts" / "injectflags.py"
-CHALLENGE_FILE = ROOT_DIR / "terraform" / "challenges.json"
+CHALLENGE_FILE = ROOT_DIR / "challenges.json"
 
 
 def run_createflags(tmp_path, *args):

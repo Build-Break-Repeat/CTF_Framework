@@ -63,4 +63,4 @@ logs/
 get-docker.sh
 firewall_ports.state
 terraform/ctfd_token.txt
-
+.terraform.lock.hcl

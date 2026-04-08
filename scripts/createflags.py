@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_CHALLENGE_FILE = SCRIPT_DIR.parent / "terraform" / "challenges.json"
+DEFAULT_CHALLENGE_FILE = SCRIPT_DIR.parent / "challenges.json"
 DEFAULT_PRESET_FILE = SCRIPT_DIR / "flag_presets.json"
 DEFAULT_OUTPUT_DIR = SCRIPT_DIR.parent / "flags"
 
