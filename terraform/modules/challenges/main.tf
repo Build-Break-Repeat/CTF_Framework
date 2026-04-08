@@ -18,8 +18,8 @@ variable "network_name" {
 resource "docker_container" "challenge_containers" {
   for_each = var.challenges
 
-  name  = each.key
-  image = each.value.image
+  name   = each.key
+  image  = each.value.image
   memory = lookup(each.value, "memory", 256)
 
   networks_advanced {

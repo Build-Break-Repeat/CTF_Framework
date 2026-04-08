@@ -5,16 +5,16 @@ variable "challenges" {
 resource "ctfd_challenge_standard" "dynamic" {
   for_each = var.challenges
 
-  name        = each.key
-  category    = lookup(each.value, "category", "General")
+  name     = each.key
+  category = lookup(each.value, "category", "General")
   description = format(
     "## %s\n\n%s",
     lookup(each.value, "name", each.key),
     lookup(each.value, "description", "")
   )
-  value       = lookup(each.value, "points", 100)
+  value = lookup(each.value, "points", 100)
 
-  state       = lookup(each.value, "state", "visible")
+  state        = lookup(each.value, "state", "visible")
   max_attempts = lookup(each.value, "max_attempts", 0)
 }
 

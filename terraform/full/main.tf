@@ -8,8 +8,8 @@ locals {
 }
 
 module "challenges" {
-  source     = "../modules/challenges"
-  challenges = local.challenges
+  source       = "../modules/challenges"
+  challenges   = local.challenges
   network_name = data.docker_network.lab_network.name
   providers = {
     docker = docker
