@@ -1,9 +1,8 @@
-<!-- 1-23 is pulled from index outside of title-->
 <!DOCTYPE html>
 <html>
 
 <head>
-    <title>Register Team - Build Break Repeat CTF</title>
+    <title>Configure Event - Build Break Repeat</title>
 
     <link rel="stylesheet" href="../css/UIconfig.css">
     <script src="../js/UIbehavior.js"></script>
@@ -12,44 +11,80 @@
 <body>
 
 <header>
-    <h1>Build Break Repeat CTF</h1>
+    <div class="header-shell">
+        <div class="brand-block">
+            <h1>Build Break Repeat</h1>
+        </div>
 
-    <nav>
-        <a href="../index.html">Home</a> 
-        <a href="register.html">Register</a> 
-        <a href="challenges.html">Challenges</a> 
-        <a href="instructions.html">Instructions</a>
-    </nav>
+        <nav>
+            <a href="../index.html">Dashboard</a>
+            <a class="active" href="register.html">Configure Event</a>
+            <a href="challenges.html">Review Challenges</a>
+            <a href="instructions.html">Deployment Guide</a>
+        </nav>
+    </div>
 </header>
 
 <main>
+    <section class="setup-section">
+        <h2>Configure Event</h2>
+        <form id="setup-form" class="setup-form">
+            <div class="field-grid setup-fields">
+                <label class="field" for="eventName">
+                    <span>Event name</span>
+                    <input type="text" id="eventName" name="eventName" placeholder="Spring 2026 Networking Lab">
+                </label>
 
-    <h2>Team Registration</h2>
+                <label class="field" for="teamCount">
+                    <span>Number of teams</span>
+                    <input type="number" id="teamCount" name="teamCount" min="1">
+                </label>
 
-    <p>
-        Enter your team name and members to begin the CTF.
-    </p>
-    <!--redirect to challenges upon completion-->
-    <!--form that registers and collects team information-->
-    <form action = "challenges.html">
-        <label for=""teamName>Team Name:</label>
-        <br> 
-        <input type="text" id="teanName" name="teamName">
-        <br><br>
+                <label class="field" for="eventLength">
+                    <span>Planned event length (minutes)</span>
+                    <input type="number" id="eventLength" name="eventLength" min="30" step="15">
+                </label>
+            </div>
 
-        <label for="members">Members (seperate by commas or put one per line):</label>
-        <br>
-        <!--I want a big box becuase people can have long names and gives them space.-->
-        <textarea id="members" name="members" row="5" cols="40"></textarea>
-        <br><br>
+            <div class="setup-group">
+                <h3>Challenge categories</h3>
+                <label class="field" for="challengeSelection">
+                    <span>Select CTF Environment</span>
+                    <select id="challengeSelection" name="challengeSelection" class="challenge-selection" multiple size="7">
+                        <option value="dvwa">Damn Vulnerable Web Application</option>
+                        <option value="juice-shop">OWASP Juice Shop</option>
+                        <option value="webgoat">WebGoat</option>
+                        <option value="sqli">SQL Injection Lab</option>
+                        <option value="nowasp">NoWASP</option>
+                        <option value="bwapp">BWAPP</option>
+                        <option value="metasploitable">Metasploitable</option>
+                    </select>
+                </label>
+                <div class="button-row">
+                    <a class="button secondary" href="challenges.html">Don't know what to pick? Click Here for more Challenge info</a>
+                </div>
+            </div>
 
-        <button type="submit">Register Team</button>
-    </form>
+            <div class="setup-group">
+                <h3>Flag assignment</h3>
+                <div class="check-grid setup-categories">
+                    <label class="check-card">
+                        <input type="radio" name="flagMode" value="unique" checked>
+                        <span><strong>(Per Team Flags)</strong> Generate separate flags for each team to complete.</span>
+                    </label>
+                    <label class="check-card">
+                        <input type="radio" name="flagMode" value="shared">
+                        <span><strong>(Shared Flags)</strong> Generate flags to be completed by any team.</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="submit">Complete Setup</button>
+            </div>
+        </form>
+    </section>
 </main>
-
-
-
-
 </body>
 
 </html>
