@@ -1,39 +1,43 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
-        <title>Build Break Repeat CTF</title>
+<head>
+    <title>Build Break Repeat Instructor Portal</title>
 
-        <link rel="stylesheet" href="css/UIconfig.css">
-        <script src="js/UIbehavior.js"></script>
-
-    </head>
+    <link rel="stylesheet" href="css/UIconfig.css">
+    <script src="js/UIbehavior.js"></script>
+</head>
 
 <body>
 
 <header>
-    <h1>Build Break Repeat CTF</h1>
+    <div class="header-shell">
+        <div class="brand-block">
+            <h1>Build Break Repeat</h1>
+        </div>
 
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="pages/register.html">Register</a>
-        <a href="pages/challenges.html">Challenges</a>
-        <a href="pages/instructions.html">Instructions</a>
-    </nav>
+        <nav>
+            <a class="active" href="index.html">Dashboard</a>
+            <a href="pages/register.html">Configure Event</a>
+            <a href="pages/challenges.html">Review Challenges</a>
+            <a href="pages/instructions.html">Deployment Guide</a>
+        </nav>
+    </div>
 </header>
 
 <main>
+    <section>
+        <h2>Instructor Dashboard</h2>
+        <p>
+            Use this dashboard to configure the event, review deployment selections, and transition participants to CTFd for live competition management.
+        </p>
+        <div class="button-row quick-actions">
+            <a class="button" href="pages/register.html">Configure Event</a>
+            <a class="button secondary" href="pages/challenges.html">Review Challenges</a>
+            <a class="button secondary" href="pages/instructions.html">Open Deployment Guide</a>
+        </div>
+    </section>
 
-<h2>Welcome to the CTF Platform</h2>
-
-<p>
-Register your team, explore challenges, and start capturing flags.
-</p>
-
-
-<a href="pages/register.html">
-    <button>Get Started</button>
-</a>
 </main>
 
 </body>
