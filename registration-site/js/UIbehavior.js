@@ -57,3 +57,9 @@ function startChallenge(name) {
     console.log("Starting challenge:", name);
     alert(`Starting ${name}`);
 }
+
+//Redirect to CTFd
+function redirectToCtfd(event) {
+    event.preventDefault();
+    window.location.assign(CTFD_URL);
+}
