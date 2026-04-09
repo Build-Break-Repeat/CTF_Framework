@@ -1,58 +1,41 @@
 <!DOCTYPE html>
 <html>
-    <head>
+
+<head>
     <title>Challenges - Build Break Repeat</title>
 
     <link rel="stylesheet" href="../css/UIconfig.css">
     <script src="../js/UIbehavior.js"></script>
-    </head>    
+</head>
+
 <body>
 
-
-    <header>
-        <h1>Build Break Repeat CTF</h1>
-
-
+<header>
+    <div class="header-shell">
+        <div class="brand-block">
+            <h1>Build Break Repeat</h1>
+            <p>Review and choose challenges before the instructor runs deployment.</p>
+        </div>
 
         <nav>
-            <a href="../index.html">Home</a> 
-            <a href="register.html">Register</a> 
-            <a href="challenges.html">Challenges</a> 
-            <a href="instructions.html">Instructions</a>
+            <a href="../index.html">Dashboard</a>
+            <a href="register.html">Configure Event</a>
+            <a class="active" href="challenges.html">Review Challenges</a>
+            <a href="instructions.html">Deployment Guide</a>
         </nav>
-    </header>
+    </div>
+</header>
 
+<main>
+    <section>
+        <h2>Available Challenges</h2>
 
-
-    <main>
-
-        <h2>Challenges</h2>
-
+        <h3>Challenge Selection</h3>
         <p>
-            Selection a challenge, solve it, and turn in the correct flag.
+            [Challenges showcase with Flags]
         </p>
-
-
-        <section>
-            <h3>Available Challenges</h3>
-        
-        <div id="challenge-container" class="challenge-container"></div>
-            
-        </section>
-
-
-        <section>
-        <h3>Submit Flag</h3>
-        <form>
-            <label for="flagSubmittion">Enter Flag:</label>
-            <br>
-            <input type="text" id="flagSubmittion" name="flagSubmittion">
-            <br><br>
-
-            <button type="submit">Submit Flag</button>
-            </form>
-        </section>
-    </main>
+    </section>
+</main>
 </body>
 
 </html>
