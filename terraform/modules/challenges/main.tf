@@ -25,4 +25,12 @@ resource "docker_container" "challenge_containers" {
   networks_advanced {
     name = var.network_name
   }
+  dynamic "ports" {
+    for_each = lookup(each.value, "ports", [])
+    content {
+      internal = ports.value.internal
+      external = ports.value.external
+    }
+  }
+
 }
