@@ -209,6 +209,11 @@ remove_firewall_rules() {
 
 # Configure Firewall rules
 config_firewall() {
+	if ! systemctl is-active --quiet docker; then
+		echo "[ERROR] Docker is not running. Cannot read container ports."
+		exit 1
+	fi
+
 	echo "[*] Detect firewall type"
 	FIREWALL=$(detect_firewall)
 
