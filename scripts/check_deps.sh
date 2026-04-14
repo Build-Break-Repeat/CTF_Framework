@@ -48,14 +48,7 @@ if ! systemctl is-active --quiet docker; then
 	if $NON_INTERACTIVE; then
 		echo "[ERROR] Prompts disabled"
 		exit 1
-	elif $AUTO_INSTALL; then
-		RESPONSE=y
-	else
-		read -r -p "[?] Docker service not running, start now? (Y/n): " RESPONSE
-		RESPONSE=${RESPONSE:-y}
-	fi
-
-	if [[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]; then
+	elif $AUTO_INSTALL || confirm "[?] Docker service not running, start now?"; then
 		sudo systemctl start docker
 	else
 		echo "[ERROR] Docker must be running."

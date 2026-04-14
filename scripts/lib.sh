@@ -14,6 +14,14 @@ command_exists() {
 	command -v "$1" > /dev/null 2>&1
 }
 
+# Prompt user for confirmation: confirm "<message>"
+# Returns 0 (yes) or 1 (no). Defaults to yes on Enter.
+confirm() {
+	read -r -p "$1 (Y/n): " RESPONSE
+	RESPONSE=${RESPONSE:-y}
+	[[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]
+}
+
 # Install package: install_pkg <package>
 install_pkg() {
 	# Newer RHEL/CentOS systems
@@ -38,14 +46,7 @@ install_docker() {
 		exit 1
 	fi
 
-	if ! $AUTO_INSTALL; then
-		read -r -p "[?] Docker is not installed. Would you like to install it now? (Y/n): " RESPONSE
-		RESPONSE=${RESPONSE:-y}
-	else
-		RESPONSE=y
-	fi
-
-	if [[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]; then
+	if $AUTO_INSTALL || confirm "[?] Docker is not installed. Would you like to install it now?"; then
 		# Download the vendor's script for proper setup
 		curl -fsSL https://get.docker.com -o get-docker.sh
 
@@ -64,14 +65,7 @@ prompt_install() {
 		exit 1
 	fi
 
-	if ! $AUTO_INSTALL; then
-		read -r -p "[?] $1 is not installed. Would you like to install it now? (Y/n): " RESPONSE
-		RESPONSE=${RESPONSE:-y}
-	else
-		RESPONSE=y
-	fi
-
-	if [[ "$RESPONSE" == "y" || "$RESPONSE" == "Y" ]]; then
+	if $AUTO_INSTALL || confirm "[?] $1 is not installed. Would you like to install it now?"; then
 		install_pkg "$1"
 	else
 		echo "[ERROR] Cannot proceed without $1"
