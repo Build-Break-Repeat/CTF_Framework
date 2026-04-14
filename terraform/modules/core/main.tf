@@ -20,7 +20,7 @@ resource "docker_container" "ctfd" {
   }
   ports {
     internal = 8000
-    external = 8000
+    external = 80
   }
 }
 
