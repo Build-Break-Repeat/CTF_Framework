@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
+
+parse_flags "$@"
+
+# Terraform execution
+echo "[*] Running Terraform bootstrap"
+
+cd "$TERRAFORM_DIR/bootstrap"
+terraform init -input=false -upgrade
+
+# Initial bootstrap of Terraform
+sudo terraform apply -auto-approve
+
+# Bootstrap CTFd and get API key
+cd "$SCRIPT_DIR"
+python3 ctfd_bootstrap.py
