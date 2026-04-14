@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 bash "$SCRIPT_DIR/check_deps.sh" "$@"
 bash "$SCRIPT_DIR/terraform_bootstrap.sh" "$@"
+python3 "$SCRIPT_DIR/ctfd_bootstrap.py"
 bash "$SCRIPT_DIR/terraform_deploy.sh" "$@"
 bash "$SCRIPT_DIR/configure_firewall.sh"
 

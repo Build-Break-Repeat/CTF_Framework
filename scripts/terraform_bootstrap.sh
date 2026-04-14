@@ -14,7 +14,3 @@ terraform init -input=false -upgrade
 
 # Initial bootstrap of Terraform
 sudo terraform apply -auto-approve
-
-# Bootstrap CTFd and get API key
-cd "$SCRIPT_DIR"
-python3 ctfd_bootstrap.py
