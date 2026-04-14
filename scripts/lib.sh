@@ -35,6 +35,7 @@ install_pkg() {
 install_docker() {
 	if $NON_INTERACTIVE; then
 		echo "[ERROR] Non-interactive mode, required package not installed: Docker"
+		exit 1
 	fi
 
 	if ! $AUTO_INSTALL; then
@@ -60,6 +61,7 @@ install_docker() {
 prompt_install() {
 	if $NON_INTERACTIVE; then
 		echo "[ERROR] Non-interactive mode, required package not installed: $1"
+		exit 1
 	fi
 
 	if ! $AUTO_INSTALL; then
