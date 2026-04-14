@@ -3,7 +3,10 @@
     "name": "Spring 2026 CTF",
     "teams": 8,
     "flag_prefix": "CTF",
-    "secret_seed": "random-string"
+    "secret_seed": "random-string",
+    "admin": {
+      "username": "admin"
+    }
   },
   "challenges": [
     {

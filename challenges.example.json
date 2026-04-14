@@ -3,7 +3,11 @@
     "name": "",
     "teams": 0,
     "flag_prefix": "CTF",
-    "secret_seed": "random-string"
+    "secret_seed": "random-string",
+    "admin": {
+      "username": "admin",
+      "password": ""
+    }
   },
   "challenges": [
 #    {

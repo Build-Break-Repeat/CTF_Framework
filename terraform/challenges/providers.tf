@@ -1,5 +1,6 @@
 locals {
-  ctfd_api_key = trimspace(file("${path.module}/../ctfd_token.txt"))
+  token_file   = "${path.module}/../ctfd_token.txt"
+  ctfd_api_key = fileexists(local.token_file) ? trimspace(file(local.token_file)) : ""
 }
 
 provider "ctfd" {
