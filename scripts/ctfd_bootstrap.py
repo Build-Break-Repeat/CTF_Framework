@@ -1,5 +1,7 @@
 import json
 import os
+import secrets
+import string
 import subprocess
 import sys
 import time
@@ -10,6 +12,7 @@ import time
 CTFD_CONTAINER = "ctfd"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOKEN_OUTPUT_FILE = os.path.join(BASE_DIR, "terraform", "ctfd_token.txt")
+ADMIN_PASSWORD_FILE = os.path.join(BASE_DIR, "admin_password.txt")
 CONFIG_FILE = "../challenges.json"
 MAX_RETRIES = 30
 SLEEP_SECONDS = 3
@@ -96,20 +99,38 @@ def load_config() -> dict:
         return json.load(f)
 
 
+def get_admin_credentials(cfg: dict) -> tuple:
+
+    admin_cfg = cfg.get("event", {}).get("admin", {})
+    username = admin_cfg.get("username", "admin")
+    password = admin_cfg.get("password")
+
+    if not password:
+        alphabet = string.ascii_letters + string.digits
+        password = "".join(secrets.choice(alphabet) for _ in range(8))
+        with open(ADMIN_PASSWORD_FILE, "w") as f:
+            f.write(f"username: {username}\npassword: {password}\n")
+        print(f"[*] No admin password in config — generated and saved to {ADMIN_PASSWORD_FILE}")
+
+    return username, password
+
+
 # =========================
 # CREATE ADMIN
 # =========================
-def create_admin():
+def create_admin(username: str, password: str):
     print("[*] Creating admin user...")
-    script = """
+    username_escaped = username.replace("\\", "\\\\").replace('"', '\\"')
+    password_escaped = password.replace("\\", "\\\\").replace('"', '\\"')
+    script = f"""
 from CTFd.models import Users, db
 
-user = Users.query.filter_by(name="admin").first()
+user = Users.query.filter_by(name="{username_escaped}").first()
 if not user:
     user = Users(
-        name="admin",
-        email="admin@test.com",
-        password="admin123",
+        name="{username_escaped}",
+        email="{username_escaped}@ctf.local",
+        password="{password_escaped}",
         type="admin",
         verified=True,
         hidden=True,
@@ -267,8 +288,9 @@ def main():
         sys.exit(1)
 
     cfg = load_config()
+    username, password = get_admin_credentials(cfg)
 
-    create_admin()
+    create_admin(username, password)
     run_setup(cfg)
     token = generate_token()
     save_token(token)
