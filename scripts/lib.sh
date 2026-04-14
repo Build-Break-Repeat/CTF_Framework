@@ -39,6 +39,38 @@ install_pkg() {
 	fi
 }
 
+# Ensure current user is in the docker group and that the current session has docker group access.
+ensure_docker_group() {
+	local script_args=("$@")
+
+	# Current session already has docker group access — nothing to do
+	if id -Gn | grep -qw "docker"; then
+		return 0
+	fi
+
+	# User is in the docker group but the current session hasn't loaded it yet
+	if id -Gn "$USER" | grep -qw "docker"; then
+		echo "[*] User '$USER' is in the docker group but the current session hasn't loaded it"
+		echo "[*] Reloading group membership..."
+		exec sg docker "$0" "${script_args[@]}"
+	fi
+
+	# User is not in the docker group at all
+	echo "[*] User '$USER' is not in the docker group"
+
+	if $NON_INTERACTIVE; then
+		echo "[ERROR] Non-interactive mode; '$USER' must be added to the docker group manually: sudo usermod -aG docker $USER"
+		exit 1
+	elif $AUTO_INSTALL || confirm "[?] Add '$USER' to the docker group?"; then
+		sudo usermod -aG docker "$USER"
+		echo "[*] Added '$USER' to the docker group. Reloading group membership..."
+		exec sg docker "$0" "${script_args[@]}"
+	else
+		echo "[ERROR] User must be in the docker group to run Docker commands without sudo."
+		exit 1
+	fi
+}
+
 # Docker install
 install_docker() {
 	if $NON_INTERACTIVE; then
