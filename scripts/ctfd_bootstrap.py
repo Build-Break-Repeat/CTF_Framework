@@ -227,15 +227,16 @@ print("SETUP_DONE")
 # =========================
 # GENERATE TOKEN
 # =========================
-def generate_token() -> str:
+def generate_token(username: str) -> str:
     print("[*] Generating API token...")
-    script = """
+    username_escaped = username.replace("\\", "\\\\").replace('"', '\\"')
+    script = f"""
 import os
 import datetime
 from CTFd.models import Users, UserTokens, db
 from CTFd.utils.encoding import hexencode
 
-user = Users.query.filter_by(name="admin").first()
+user = Users.query.filter_by(name="{username_escaped}").first()
 if not user:
     raise Exception("Admin user not found")
 
@@ -292,7 +293,7 @@ def main():
 
     create_admin(username, password)
     run_setup(cfg)
-    token = generate_token()
+    token = generate_token(username)
     save_token(token)
     print("[+] Bootstrap complete")
 
