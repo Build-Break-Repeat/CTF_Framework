@@ -1,125 +1,160 @@
+//main ctfctl script to run:
+
+
+
 package main
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
-	"os/exec"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "os"
+    "os/exec"
 )
 
+// Challenge struct for reading challenges.json
 type challenge struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Points int    `json:"points"`
+    ID     string `json:"id"`
+    Name   string `json:"name"`
+    Points int    `json:"points"`
 }
 
+// Wrapper struct for the JSON file
 type challengeConfig struct {
-	Challenges []challenge `json:"challenges"`
+    Challenges []challenge `json:"challenges"`
 }
 
+// executes a normal system command (terraform, python, etc.)
 func runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	fmt.Println("$", name, args)
-	return cmd.Run()
+    fmt.Println("$", name, args)
+    cmd := exec.Command(name, args...)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    cmd.Stdin = os.Stdin
+    return cmd.Run()
 }
 
+// executes a bash script like deploy.sh or destroy.sh
 func runScript(script string) error {
-	cmd := exec.Command("bash", script)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	fmt.Println("$ bash", script)
-	return cmd.Run()
+    fmt.Println("$ bash", script)
+    cmd := exec.Command("bash", script)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    cmd.Stdin = os.Stdin
+    return cmd.Run()
 }
 
+//runs the terraform bootstrap and CTFd setup scripts
 func bootstrap() error {
-	if err := runCommand("terraform", "-chdir=terraform/bootstrap", "init", "-input=false", "-upgrade"); err != nil {
-		return err
-	}
-	if err := runCommand("terraform", "-chdir=terraform/bootstrap", "apply", "-auto-approve"); err != nil {
-		return err
-	}
+    // terraform init
+    if err := runCommand("terraform", "-chdir=terraform/bootstrap", "init", "-input=false", "-upgrade"); err != nil {
+        return err
+    }
 
-	if err := runCommand("python3", "scripts/ctfd_bootstrap.py"); err == nil {
-		return nil
-	}
+    // terraform apply
+    if err := runCommand("terraform", "-chdir=terraform/bootstrap", "apply", "-auto-approve"); err != nil {
+        return err
+    }
 
-	return runCommand("python", "scripts/ctfd_bootstrap.py")
+    // try python3 first
+    if err := runCommand("python3", "scripts/ctfd_bootstrap.py"); err == nil {
+        return nil
+    }
+
+    // fallback to python
+    return runCommand("python", "scripts/ctfd_bootstrap.py")
 }
 
+// usage prints the available commands
 func usage() {
-	fmt.Println("ctfctl deploy")
-	fmt.Println("ctfctl destroy")
-	fmt.Println("ctfctl rebuild")
-	fmt.Println("ctfctl bootstrap")
-	fmt.Println("ctfctl challenge list")
+    fmt.Println("ctfctl deploy")
+    fmt.Println("ctfctl destroy")
+    fmt.Println("ctfctl rebuild")
+    fmt.Println("ctfctl reset")
+    fmt.Println("ctfctl bootstrap")
+    fmt.Println("ctfctl challenge list")
 }
 
+//loads challenges.json and prints each challenge
 func challengeList() error {
-	data, err := os.ReadFile("challenges.json")
-	if err != nil {
-		return err
-	}
+    data, err := os.ReadFile("challenges.json")
+    if err != nil {
+        return err
+    }
 
-	var cfg challengeConfig
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return err
-	}
+    var cfg challengeConfig
+    if err := json.Unmarshal(data, &cfg); err != nil {
+        return err
+    }
 
-	for _, c := range cfg.Challenges {
-		fmt.Printf("%s | %s | %d pts\n", c.ID, c.Name, c.Points)
-	}
-	return nil
+    for _, c := range cfg.Challenges {
+        fmt.Printf("%s | %s | %d pts\n", c.ID, c.Name, c.Points)
+    }
+    return nil
 }
 
+
+//ctfctl challenge list
 func challengeCommand(args []string) error {
-	if len(args) == 0 {
-		return errors.New("challenge subcommand required (list)")
-	}
+    if len(args) == 0 {
+        return errors.New("challenge subcommand required (list)")
+    }
 
-	switch args[0] {
-	case "list":
-		return challengeList()
-	default:
-		return fmt.Errorf("unknown challenge subcommand: %s", args[0])
-	}
+    switch args[0] {
+    case "list":
+        return challengeList()
+    default:
+        return fmt.Errorf("unknown challenge subcommand: %s", args[0])
+    }
 }
 
+// main
 func main() {
-	if len(os.Args) != 2 {
-		usage()
-		os.Exit(1)
-	}
 
-	var err error
+    // allow more than 2 arguments
+    if len(os.Args) < 2 {
+        usage()
+        os.Exit(1)
+    }
 
-	switch os.Args[1] {
-	case "deploy":
-		err = runScript("scripts/deploy.sh")
-	case "destroy":
-		err = runScript("scripts/destroy.sh")
-	case "rebuild":
-		if err = runScript("scripts/destroy.sh"); err == nil {
-			err = runScript("scripts/deploy.sh")
-		}
-	case "bootstrap":
-		err = bootstrap()
-	case "challenge":
-		err = challengeCommand(os.Args[2:])
-	case "help", "-h", "--help":
-		usage()
-		return
-	default:
-		usage()
-		err = fmt.Errorf("unknown command: %s", os.Args[1])
-	}
+    cmd := os.Args[1]      // main command
+    args := os.Args[2:]    // extra arguments (used for challenge list)
+    var err error
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
+    switch cmd {
+
+    case "deploy":
+        err = runScript("scripts/deploy.sh")
+
+    case "destroy":
+        err = runScript("scripts/destroy.sh")
+
+    case "rebuild":
+        // destroy everything, then deploy everything
+        if err = runScript("scripts/destroy.sh"); err == nil {
+            err = runScript("scripts/deploy.sh")
+        }
+
+    case "reset":
+        // destroy only challenge containers, then redeploy challenges
+        if err = runScript("scripts/reset_challenges.sh"); err == nil {
+            err = runScript("scripts/deploy.sh")
+        }
+
+    case "bootstrap":
+        err = bootstrap()
+
+    case "challenge":
+        err = challengeCommand(args)
+
+    default:
+        usage()
+        err = fmt.Errorf("unknown command: %s", cmd)
+    }
+
+    // print error and exit if something failed
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
+    }
 }
