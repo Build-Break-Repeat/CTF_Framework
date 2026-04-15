@@ -56,7 +56,13 @@ resource "docker_container" "caddy" {
     content = <<-EOT
       :443 {
           reverse_proxy ctfd:8000
-          tls internal
+          tls internal {
+              on_demand
+          }
+      }
+
+      :80 {
+          redir https://{host}{uri} permanent
       }
     EOT
     file = "/etc/caddy/Caddyfile"
