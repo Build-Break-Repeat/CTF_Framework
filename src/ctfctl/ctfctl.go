@@ -9,6 +9,15 @@ import (
     "strings"
 )
 
+// --------------
+// Version string
+// --------------
+const version = "1.0.0"
+
+// --------------------
+// Structures for types
+// --------------------
+
 // Challenge struct for reading challenges.json
 type port struct {
     Internal int `json:"internal"`
@@ -27,6 +36,10 @@ type challenge struct {
 type challengeConfig struct {
     Challenges []challenge `json:"challenges"`
 }
+
+// ----------------
+// Generic Commands
+// ----------------
 
 // executes a normal system command (terraform, python, etc.)
 func runCommand(name string, args ...string) error {
