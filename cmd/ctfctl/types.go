@@ -23,6 +23,7 @@ type challenge struct {
 	Memory      int            `json:"memory,omitempty"`
 	Flag        *challengeFlag `json:"flag,omitempty"`
 	Ports       []port         `json:"ports,omitempty"`
+	Environment []string       `json:"environment,omitempty"`
 }
 
 type eventAdmin struct {

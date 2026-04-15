@@ -54,6 +54,7 @@ logs/
 .idea/
 *.swp
 *.swo
+.claude
 
 # Go binaries
 /ctfctl

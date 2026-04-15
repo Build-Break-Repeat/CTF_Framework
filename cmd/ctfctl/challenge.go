@@ -119,6 +119,85 @@ func resolvePorts(inputs []string) ([]port, error) {
 	return promptPorts(), nil
 }
 
+func promptEnv() []string {
+	var result []string
+
+	fmt.Println("Environment variables (KEY=VALUE):")
+
+	for {
+		raw := promptField("Env var", "")
+		if raw == "" {
+			break
+		}
+
+		result = append(result, raw)
+	}
+
+	return result
+}
+
+func resolveEnv(inputs []string) []string {
+	if len(inputs) > 0 {
+		return inputs
+	}
+	return promptEnv()
+}
+
+func editEnv(current []string) []string {
+	result := []string{}
+	for i := 0; i < len(current); i++ {
+		result = append(result, current[i])
+	}
+
+	for {
+		fmt.Println("Environment variables:")
+		if len(result) == 0 {
+			fmt.Println("  (none)")
+		}
+		for i := 0; i < len(result); i++ {
+			fmt.Printf("  %d) %s\n", i+1, result[i])
+		}
+
+		fmt.Print("  [a]dd  [r]emove <n>  [done]: ")
+		line, _ := stdinReader.ReadString('\n')
+		input := strings.TrimSpace(line)
+
+		if input == "" || input == "done" || input == "d" {
+			break
+		}
+
+		if input == "a" {
+			raw := promptField("Env var (KEY=VALUE)", "")
+			if raw == "" {
+				continue
+			}
+			result = append(result, raw)
+			continue
+		}
+
+		if strings.HasPrefix(input, "r ") {
+			numStr := strings.TrimPrefix(input, "r ")
+			n, err := strconv.Atoi(strings.TrimSpace(numStr))
+			if err != nil || n < 1 || n > len(result) {
+				fmt.Println("  Invalid selection")
+				continue
+			}
+			updated := []string{}
+			for i := 0; i < len(result); i++ {
+				if i+1 != n {
+					updated = append(updated, result[i])
+				}
+			}
+			result = updated
+			continue
+		}
+
+		fmt.Println("  Unknown option")
+	}
+
+	return result
+}
+
 func loadChallengeConfig() (challengeConfig, error) {
 	var cfg challengeConfig
 
@@ -228,10 +307,17 @@ func challengeAdd(args []string) error {
 	fsImage := fs.String("image", "", "")
 	fsMemory := fs.Int("memory", 0, "")
 	fsFlagPath := fs.String("flag-path", "", "")
+	fsPath := fs.String("path", "", "")
 
 	var fsPorts []string
 	fs.Func("port", "", func(v string) error {
 		fsPorts = append(fsPorts, v)
+		return nil
+	})
+
+	var fsEnvs []string
+	fs.Func("env", "", func(v string) error {
+		fsEnvs = append(fsEnvs, v)
 		return nil
 	})
 
@@ -289,6 +375,9 @@ func challengeAdd(args []string) error {
 		return err
 	}
 	c.Ports = ports
+
+	c.Path = getOptionalString(*fsPath, "URL path")
+	c.Environment = resolveEnv(fsEnvs)
 
 	cfg, err := loadChallengeConfig()
 	if err != nil {
@@ -442,10 +531,17 @@ func challengeEdit(args []string) error {
 	fsImage := fs.String("image", "", "")
 	fsMemory := fs.Int("memory", 0, "")
 	fsFlagPath := fs.String("flag-path", "", "")
+	fsPath := fs.String("path", "", "")
 
 	var fsPorts []string
 	fs.Func("port", "", func(v string) error {
 		fsPorts = append(fsPorts, v)
+		return nil
+	})
+
+	var fsEnvs []string
+	fs.Func("env", "", func(v string) error {
+		fsEnvs = append(fsEnvs, v)
 		return nil
 	})
 
@@ -540,6 +636,18 @@ func challengeEdit(args []string) error {
 		c.Ports = ports
 	} else {
 		c.Ports = editPorts(c.Ports)
+	}
+
+	if *fsPath != "" {
+		c.Path = *fsPath
+	} else {
+		c.Path = promptField("URL path", c.Path)
+	}
+
+	if len(fsEnvs) > 0 {
+		c.Environment = fsEnvs
+	} else {
+		c.Environment = editEnv(c.Environment)
 	}
 
 	cfg.Challenges[index] = c
