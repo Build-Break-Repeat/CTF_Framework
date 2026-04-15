@@ -56,6 +56,3 @@ if ! systemctl is-active --quiet docker; then
 		exit 1
 	fi
 fi
-
-# Docker group check
-ensure_docker_group "$@"

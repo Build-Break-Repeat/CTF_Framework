@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
+parse_flags "$@"
+ensure_docker_group "$@"
 
 bash "$SCRIPT_DIR/check_deps.sh" "$@"
 bash "$SCRIPT_DIR/terraform_bootstrap.sh" "$@"
