@@ -153,6 +153,56 @@ func saveChallengeConfig(cfg challengeConfig) error {
 // Subcommands
 // -----------------------
 
+func challengeShow(args []string) error {
+	if len(args) == 0 {
+		return errors.New("usage: ctfctl challenge show <id>")
+	}
+
+	id := args[0]
+
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	index := -1
+	for i := 0; i < len(cfg.Challenges); i++ {
+		if cfg.Challenges[i].ID == id {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return errors.New("no challenge found with ID: " + id)
+	}
+
+	c := cfg.Challenges[index]
+
+	fmt.Println("ID:         ", c.ID)
+	fmt.Println("Name:       ", c.Name)
+	fmt.Println("Description:", c.Description)
+	fmt.Println("Category:   ", c.Category)
+	fmt.Println("Points:     ", strconv.Itoa(c.Points))
+	fmt.Println("Image:      ", c.Image)
+	fmt.Println("Memory:     ", strconv.Itoa(c.Memory)+"MB")
+
+	if c.Flag != nil {
+		fmt.Println("Flag path:  ", c.Flag.Path)
+	}
+
+	fmt.Println("Ports:")
+	if len(c.Ports) == 0 {
+		fmt.Println("  (none)")
+	}
+	for i := 0; i < len(c.Ports); i++ {
+		p := c.Ports[i]
+		fmt.Println(" ", strconv.Itoa(p.Internal), "->", strconv.Itoa(p.External))
+	}
+
+	return nil
+}
+
 func challengeList() error {
 	cfg, err := loadChallengeConfig()
 	if err != nil {
@@ -553,6 +603,10 @@ func challengeCommand(args []string) error {
 
 	if sub == "list" {
 		return challengeList()
+	}
+
+	if sub == "show" {
+		return challengeShow(args[1:])
 	}
 
 	if sub == "add" {

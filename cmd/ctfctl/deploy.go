@@ -57,6 +57,34 @@ func getHostIP() string {
 	return "localhost"
 }
 
+func status() error {
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Status:")
+	fmt.Println("----------------------------------------")
+
+	for i := 0; i < len(cfg.Challenges); i++ {
+		c := cfg.Challenges[i]
+
+		out, err := exec.Command("docker", "inspect", "--format", "{{.State.Status}}", c.ID).Output()
+
+		state := ""
+		if err != nil {
+			state = "not found"
+		} else {
+			state = strings.TrimSpace(string(out))
+		}
+
+		fmt.Printf("%-30s %s\n", c.Name, state)
+	}
+
+	fmt.Println("----------------------------------------")
+	return nil
+}
+
 func printChallengeURLs() error {
 	cfg, err := loadChallengeConfig()
 	if err != nil {
