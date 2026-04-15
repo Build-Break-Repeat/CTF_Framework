@@ -52,7 +52,7 @@ ensure_docker_group() {
 	if id -Gn "$USER" | grep -qw "docker"; then
 		echo "[*] User '$USER' is in the docker group but the current session hasn't loaded it"
 		echo "[*] Reloading group membership..."
-		exec sg docker bash "$0" "${script_args[@]}"
+		exec sg docker -c "bash $(printf '%q ' "$0" "${script_args[@]}")"
 	fi
 
 	# User is not in the docker group at all
@@ -64,7 +64,7 @@ ensure_docker_group() {
 	elif $AUTO_INSTALL || confirm "[?] Add '$USER' to the docker group?"; then
 		sudo usermod -aG docker "$USER"
 		echo "[*] Added '$USER' to the docker group. Reloading group membership..."
-		exec sg docker bash "$0" "${script_args[@]}"
+		exec sg docker -c "bash $(printf '%q ' "$0" "${script_args[@]}")"
 	else
 		echo "[ERROR] User must be in the docker group to run Docker commands without sudo."
 		exit 1

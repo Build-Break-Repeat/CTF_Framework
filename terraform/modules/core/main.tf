@@ -4,7 +4,16 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "~> 3.6"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
+}
+
+resource "random_password" "db_password" {
+  length  = 32
+  special = false
 }
 
 resource "docker_network" "lab_network" {
@@ -23,6 +32,12 @@ resource "docker_container" "ctfd" {
     external = 8000
     ip       = "127.0.0.1"
   }
+
+  env = [
+    "DATABASE_URL=mysql+pymysql://ctfd:${random_password.db_password.result}@ctfd-db/ctfd"
+  ]
+
+  depends_on = [docker_container.ctfd_db]
 }
 
 resource "docker_volume" "caddy_data" {
@@ -78,5 +93,12 @@ resource "docker_container" "ctfd_db" {
   networks_advanced {
     name = docker_network.lab_network.name
   }
+
+  env = [
+    "MARIADB_DATABASE=ctfd",
+    "MARIADB_USER=ctfd",
+    "MARIADB_PASSWORD=${random_password.db_password.result}",
+    "MARIADB_RANDOM_ROOT_PASSWORD=yes"
+  ]
 }
 
