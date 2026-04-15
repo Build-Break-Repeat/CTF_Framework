@@ -19,6 +19,7 @@ type challenge struct {
     ID     string `json:"id"`
     Name   string `json:"name"`
     Points int    `json:"points"`
+    Path   string `json:"path"` // added for long-term support
     Ports  []port `json:"ports"`
 }
 
@@ -145,7 +146,19 @@ func printChallengeURLs() error {
 
     for _, c := range cfg.Challenges {
         for _, p := range c.Ports {
-            fmt.Printf("%-30s http://%s:%d\n", c.Name, hostIP, p.External)
+
+            url := fmt.Sprintf("http://%s:%d", hostIP, p.External)
+
+            // append path if present
+            if c.Path != "" {
+                if strings.HasPrefix(c.Path, "/") {
+                    url += c.Path
+                } else {
+                    url += "/" + c.Path
+                }
+            }
+
+            fmt.Printf("%-30s %s\n", c.Name, url)
         }
     }
 
