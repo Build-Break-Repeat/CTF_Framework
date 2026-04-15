@@ -5,6 +5,8 @@ import string
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 
 # =========================
 # CONFIG
@@ -15,7 +17,10 @@ TOKEN_OUTPUT_FILE = os.path.join(BASE_DIR, "terraform", "ctfd_token.txt")
 ADMIN_PASSWORD_FILE = os.path.join(BASE_DIR, "admin_password.txt")
 CONFIG_FILE = "../challenges.json"
 MAX_RETRIES = 30
-SLEEP_SECONDS = 3
+SLEEP_INITIAL = 2     # Initial sleep
+SLEEP_MAX     = 10    # Max sleep time between checks
+SLEEP_FACTOR  = 1.5   # Multiply by this after each failed check
+LOG_TAIL_LINES = 20   # Lines to show on failure
 DEBUG = True
 
 
@@ -27,20 +32,39 @@ def debug(msg):
 # =========================
 # WAIT FOR CONTAINER
 # =========================
-def wait_for_ctfd():
-    debug("[*] Waiting for CTFd container...")
+
+def ctfd_http_ready() -> bool:
+    try:
+        urllib.request.urlopen("http://127.0.0.1:8000", timeout=3)
+        return True
+    except urllib.error.HTTPError:
+        # Any HTTP response (even 4xx/5xx) means CTFd is serving
+        return True
+    except Exception:
+        return False
+
+
+def dump_logs(name: str):
+    print(f"[*] Last {LOG_TAIL_LINES} lines of {name} logs:")
+    result = subprocess.run(
+        ["docker", "logs", "--tail", str(LOG_TAIL_LINES), name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+
+
+def wait_for_ctfd() -> bool:
+    debug("[*] Waiting for CTFd to become ready...")
+    sleep = SLEEP_INITIAL
     for i in range(MAX_RETRIES):
-        debug(f"Attempt {i + 1}/{MAX_RETRIES}")
-        result = subprocess.run(
-            ["docker", "inspect", "-f", "{{.State.Running}}", CTFD_CONTAINER],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if result.stdout.decode().strip() == "true":
-            debug("[+] Container running")
+        if ctfd_http_ready():
+            debug("[+] CTFd is responding")
             return True
-        time.sleep(SLEEP_SECONDS)
-    debug("[ERROR] Container not ready")
+        debug(f"Attempt {i + 1}/{MAX_RETRIES} — CTFd not ready, retrying in {sleep:.0f}s")
+        time.sleep(sleep)
+        sleep = min(sleep * SLEEP_FACTOR, SLEEP_MAX)
     return False
 
 
@@ -285,7 +309,9 @@ def main():
         return
 
     if not wait_for_ctfd():
-        print("[ERROR] CTFd container never became ready")
+        print("[ERROR] CTFd never became ready")
+        dump_logs(CTFD_CONTAINER)
+        dump_logs(f"{CTFD_CONTAINER}-db")
         sys.exit(1)
 
     cfg = load_config()
