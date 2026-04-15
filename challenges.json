@@ -26,6 +26,7 @@
       "ports": [
         { "internal": 80, "external": 8001 }
       ],
+      "path": "",
       "environment": []
     }
   ]

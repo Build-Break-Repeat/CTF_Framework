@@ -54,6 +54,13 @@ logs/
 .idea/
 *.swp
 *.swo
+.claude
+
+# Go binaries
+/ctfctl
+/ctfctl.exe
+/cmd/ctfctl/ctfctl
+/cmd/ctfctl/ctfctl.exe
 
 # Misc
 *.bak

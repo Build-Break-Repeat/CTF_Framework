@@ -34,9 +34,15 @@ Current workflow:
 3. injectflags.py copies those team files into matching Docker containers.
 4. By default, flags go to /flags inside each container.
 
-Simple demo challenge:
-1. Generate flags: python3 scripts/createflags.py 1
-2. Inject flags: python3 scripts/injectflags.py
-3. Open http://<server-ip>:8010 and read the hint on the page.
-4. Check the page source, then visit /robots.txt.
-5. Follow that hint to /flag.txt and submit the team flag.
+To run ctfctl:
+sudo apt install golang-go -y
+git clone -b build-control-script https://github.com/Build-Break-Repeat/CTF_Framework.git
+cd CTF_Framework
+chmod +x ctfctl
+
+./ctfctl deploy
+./ctfctl destroy
+./ctfctl rebuild
+./ctfctl reset
+./ctfctl bootstrap
+./ctfctl challenge list
