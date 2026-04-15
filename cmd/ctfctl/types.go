@@ -1,7 +1,5 @@
 package main
 
-import "encoding/json"
-
 type port struct {
 	Internal int `json:"internal"`
 	External int `json:"external"`
@@ -27,7 +25,20 @@ type challenge struct {
 	Ports       []port         `json:"ports,omitempty"`
 }
 
+type eventAdmin struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+type eventConfig struct {
+	Name       string     `json:"name,omitempty"`
+	Teams      int        `json:"teams,omitempty"`
+	FlagPrefix string     `json:"flag_prefix,omitempty"`
+	SecretSeed string     `json:"secret_seed,omitempty"`
+	Admin      eventAdmin `json:"admin"`
+}
+
 type challengeConfig struct {
-	Event      json.RawMessage `json:"event,omitempty"`
-	Challenges []challenge     `json:"challenges"`
+	Event      eventConfig `json:"event"`
+	Challenges []challenge `json:"challenges"`
 }

@@ -86,17 +86,16 @@ func main() {
 			}
 		}
 	} else if cmd == "reset" {
-		err = runScript("scripts/reset_challenges.sh")
+		err = challengeReset([]string{})
 		if err == nil {
-			err = runScript("scripts/deploy.sh")
-			if err == nil {
-				_ = printChallengeURLs()
-			}
+			_ = printChallengeURLs()
 		}
 	} else if cmd == "bootstrap" {
 		err = bootstrap()
 	} else if cmd == "challenge" || cmd == "ch" {
 		err = challengeCommand(args)
+	} else if cmd == "event" {
+		err = eventCommand(args)
 	} else {
 		help()
 		err = errors.New("unknown command: " + cmd)

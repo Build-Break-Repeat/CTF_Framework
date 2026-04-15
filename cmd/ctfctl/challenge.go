@@ -316,9 +316,237 @@ func challengeRemove(args []string) error {
 	return nil
 }
 
+func editPorts(current []port) []port {
+	result := []port{}
+	for i := 0; i < len(current); i++ {
+		result = append(result, current[i])
+	}
+
+	for {
+		fmt.Println("Ports:")
+		if len(result) == 0 {
+			fmt.Println("  (none)")
+		}
+		for i := 0; i < len(result); i++ {
+			fmt.Printf("  %d) %d:%d\n", i+1, result[i].Internal, result[i].External)
+		}
+
+		fmt.Print("  [a]dd  [r]emove <n>  [done]: ")
+		line, _ := stdinReader.ReadString('\n')
+		input := strings.TrimSpace(line)
+
+		if input == "" || input == "done" || input == "d" {
+			break
+		}
+
+		if input == "a" {
+			raw := promptField("Port (internal:external)", "")
+			if raw == "" {
+				continue
+			}
+			p, err := parsePort(raw)
+			if err != nil {
+				fmt.Println("error:", err)
+				continue
+			}
+			result = append(result, p)
+			continue
+		}
+
+		if strings.HasPrefix(input, "r ") {
+			numStr := strings.TrimPrefix(input, "r ")
+			n, err := strconv.Atoi(strings.TrimSpace(numStr))
+			if err != nil || n < 1 || n > len(result) {
+				fmt.Println("  Invalid selection")
+				continue
+			}
+			updated := []port{}
+			for i := 0; i < len(result); i++ {
+				if i+1 != n {
+					updated = append(updated, result[i])
+				}
+			}
+			result = updated
+			continue
+		}
+
+		fmt.Println("  Unknown option")
+	}
+
+	return result
+}
+
+func challengeEdit(args []string) error {
+	if len(args) == 0 {
+		return errors.New("usage: ctfctl challenge edit <id> [flags]")
+	}
+
+	id := args[0]
+
+	fs := goflag.NewFlagSet("challenge edit", goflag.ContinueOnError)
+
+	fsName := fs.String("name", "", "")
+	fsDescription := fs.String("description", "", "")
+	fsCategory := fs.String("category", "", "")
+	fsPoints := fs.Int("points", 0, "")
+	fsImage := fs.String("image", "", "")
+	fsMemory := fs.Int("memory", 0, "")
+	fsFlagPath := fs.String("flag-path", "", "")
+
+	var fsPorts []string
+	fs.Func("port", "", func(v string) error {
+		fsPorts = append(fsPorts, v)
+		return nil
+	})
+
+	err := fs.Parse(args[1:])
+	if err != nil {
+		return err
+	}
+
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	index := -1
+	for i := 0; i < len(cfg.Challenges); i++ {
+		if cfg.Challenges[i].ID == id {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return errors.New("no challenge found with ID: " + id)
+	}
+
+	c := cfg.Challenges[index]
+
+	if *fsName != "" {
+		c.Name = *fsName
+	} else {
+		c.Name = promptField("Name", c.Name)
+	}
+
+	if *fsDescription != "" {
+		c.Description = *fsDescription
+	} else {
+		c.Description = promptField("Description", c.Description)
+	}
+
+	if *fsCategory != "" {
+		c.Category = *fsCategory
+	} else {
+		c.Category = promptField("Category", c.Category)
+	}
+
+	if *fsPoints != 0 {
+		c.Points = *fsPoints
+	} else {
+		c.Points = promptInt("Points", c.Points)
+	}
+
+	if *fsImage != "" {
+		c.Image = *fsImage
+	} else {
+		c.Image = promptField("Docker image", c.Image)
+	}
+
+	if *fsMemory != 0 {
+		c.Memory = *fsMemory
+	} else {
+		c.Memory = promptInt("Memory (MB)", c.Memory)
+	}
+
+	existingFlagPath := ""
+	if c.Flag != nil {
+		existingFlagPath = c.Flag.Path
+	}
+
+	flagPath := ""
+	if *fsFlagPath != "" {
+		flagPath = *fsFlagPath
+	} else {
+		flagPath = promptField("Flag path", existingFlagPath)
+	}
+
+	if flagPath != "" {
+		if c.Flag == nil {
+			f := challengeFlag{}
+			f.Type = "file"
+			f.Owner = "root"
+			f.Permissions = "0600"
+			c.Flag = &f
+		}
+		c.Flag.Path = flagPath
+	}
+
+	if len(fsPorts) > 0 {
+		ports, err := parsePorts(fsPorts)
+		if err != nil {
+			return err
+		}
+		c.Ports = ports
+	} else {
+		c.Ports = editPorts(c.Ports)
+	}
+
+	cfg.Challenges[index] = c
+
+	err = saveChallengeConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Updated challenge:", c.Name)
+	return nil
+}
+
+func challengeReset(args []string) error {
+	// No ID — reset all challenges
+	if len(args) == 0 {
+		err := runScript("scripts/terraform_destroy_challenges.sh")
+		if err != nil {
+			return err
+		}
+		return runScript("scripts/terraform_deploy.sh")
+	}
+
+	// Specific challenge by ID
+	id := args[0]
+
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for i := 0; i < len(cfg.Challenges); i++ {
+		if cfg.Challenges[i].ID == id {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		fmt.Println("No challenge found with ID:", id)
+		return nil
+	}
+
+	target := "module.challenges.docker_container.challenge_containers[\"" + id + "\"]"
+
+	err = runCommand("sudo", "terraform", "-chdir=terraform/challenges", "destroy", "-auto-approve", "-target="+target)
+	if err != nil {
+		return err
+	}
+
+	return runCommand("sudo", "terraform", "-chdir=terraform/challenges", "apply", "-auto-approve", "-target="+target)
+}
+
 func challengeCommand(args []string) error {
 	if len(args) == 0 {
-		return errors.New("challenge subcommand required (list, add, remove)")
+		return errors.New("challenge subcommand required (list, add, remove, reset, edit)")
 	}
 
 	sub := args[0]
@@ -333,6 +561,14 @@ func challengeCommand(args []string) error {
 
 	if sub == "remove" {
 		return challengeRemove(args[1:])
+	}
+
+	if sub == "reset" {
+		return challengeReset(args[1:])
+	}
+
+	if sub == "edit" {
+		return challengeEdit(args[1:])
 	}
 
 	return errors.New("unknown challenge subcommand: " + sub)
