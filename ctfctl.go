@@ -1,7 +1,3 @@
-//main ctfctl script to run:
-
-
-
 package main
 
 import (
@@ -10,6 +6,7 @@ import (
     "fmt"
     "os"
     "os/exec"
+    "strings"
 )
 
 // Challenge struct for reading challenges.json
@@ -17,6 +14,7 @@ type challenge struct {
     ID     string `json:"id"`
     Name   string `json:"name"`
     Points int    `json:"points"`
+    Port   int    `json:"port"`
 }
 
 // Wrapper struct for the JSON file
@@ -93,7 +91,6 @@ func challengeList() error {
     return nil
 }
 
-
 //ctfctl challenge list
 func challengeCommand(args []string) error {
     if len(args) == 0 {
@@ -106,6 +103,49 @@ func challengeCommand(args []string) error {
     default:
         return fmt.Errorf("unknown challenge subcommand: %s", args[0])
     }
+}
+
+// gets host machine IP for external access
+func getHostIP() string {
+    out, err := exec.Command("hostname", "-I").Output()
+    if err != nil {
+        return "localhost"
+    }
+    parts := strings.Fields(string(out))
+    if len(parts) > 0 {
+        return parts[0]
+    }
+    return "localhost"
+}
+
+// prints challenge container URLs after deployment
+func printChallengeURLs() error {
+    data, err := os.ReadFile("challenges.json")
+    if err != nil {
+        return err
+    }
+
+    var cfg challengeConfig
+    if err := json.Unmarshal(data, &cfg); err != nil {
+        return err
+    }
+
+    hostIP := getHostIP()
+
+    fmt.Println("")
+    fmt.Println("CTF Deployment Complete")
+    fmt.Println("")
+    fmt.Println("Challenges:")
+    fmt.Println("----------------------------------------")
+
+    for _, c := range cfg.Challenges {
+        if c.Port != 0 {
+            fmt.Printf("%-15s http://%s:%d\n", c.Name, hostIP, c.Port)
+        }
+    }
+
+    fmt.Println("----------------------------------------")
+    return nil
 }
 
 // main
@@ -125,6 +165,9 @@ func main() {
 
     case "deploy":
         err = runScript("scripts/deploy.sh")
+        if err == nil {
+            _ = printChallengeURLs()
+        }
 
     case "destroy":
         err = runScript("scripts/destroy.sh")
@@ -133,12 +176,18 @@ func main() {
         // destroy everything, then deploy everything
         if err = runScript("scripts/destroy.sh"); err == nil {
             err = runScript("scripts/deploy.sh")
+            if err == nil {
+                _ = printChallengeURLs()
+            }
         }
 
     case "reset":
         // destroy only challenge containers, then redeploy challenges
         if err = runScript("scripts/reset_challenges.sh"); err == nil {
             err = runScript("scripts/deploy.sh")
+            if err == nil {
+                _ = printChallengeURLs()
+            }
         }
 
     case "bootstrap":
