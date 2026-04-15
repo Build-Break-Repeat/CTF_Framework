@@ -56,8 +56,10 @@ logs/
 *.swo
 
 # Go binaries
-**/ctfctl
-**/ctfctl.exe
+/ctfctl
+/ctfctl.exe
+/cmd/ctfctl/ctfctl
+/cmd/ctfctl/ctfctl.exe
 
 # Misc
 *.bak

@@ -4,7 +4,8 @@ on:
   push:
     branches: [ "master" ]
     paths:
-      - "src/ctfctl/**"
+      - "cmd/ctfctl/**"
+      - "go.mod"
 
 jobs:
 
@@ -22,8 +23,7 @@ jobs:
         go-version: 'stable'
 
     - name: Build Linux binary
-      working-directory: src/ctfctl
-      run: GOOS=linux GOARCH=amd64 go build -o ../../ctfctl .
+      run: GOOS=linux GOARCH=amd64 go build -o ctfctl ./cmd/ctfctl
 
     - name: Commit binary
       run: |
