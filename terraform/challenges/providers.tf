@@ -4,6 +4,6 @@ locals {
 }
 
 provider "ctfd" {
-  url     = "http://localhost:80"
+  url     = "http://localhost:8000"
   api_key = local.ctfd_api_key
 }

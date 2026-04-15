@@ -20,8 +20,49 @@ resource "docker_container" "ctfd" {
   }
   ports {
     internal = 8000
+    external = 8000
+    ip       = "127.0.0.1"
+  }
+}
+
+resource "docker_volume" "caddy_data" {
+  name = "caddy-data"
+}
+
+resource "docker_container" "caddy" {
+  name  = "caddy"
+  image = "caddy:latest"
+
+  networks_advanced {
+    name = docker_network.lab_network.name
+  }
+
+  ports {
+    internal = 80
     external = 80
   }
+
+  ports {
+    internal = 443
+    external = 443
+  }
+
+  volumes {
+    volume_name    = docker_volume.caddy_data.name
+    container_path = "/data"
+  }
+
+  upload {
+    content = <<-EOT
+      :443 {
+          reverse_proxy ctfd:8000
+          tls internal
+      }
+    EOT
+    file = "/etc/caddy/Caddyfile"
+  }
+
+  depends_on = [docker_container.ctfd]
 }
 
 resource "docker_container" "ctfd_db" {
