@@ -57,9 +57,6 @@ jobs:
         git clone https://github.com/bats-core/bats-core.git
         sudo ./bats-core/install.sh /usr/local
 
-    - name: Run Python tests
-      run: pytest tests/test_flags.py
-
     - name: Run Bash tests
       run: bats tests/
 

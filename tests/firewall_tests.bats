@@ -4,7 +4,7 @@
 	run grep -rhoP 'external\s*=\s*\K\d+' terraform
 
 	[ "$status" -eq 0 ]
-	[[ "$output" =~ 8000 ]]
+	[[ "$output" =~ 443 ]]
 }
 
 @test "Firewall add rule command building" {

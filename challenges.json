@@ -3,7 +3,10 @@
     "name": "Spring 2026 CTF",
     "teams": 8,
     "flag_prefix": "CTF",
-    "secret_seed": "random-string"
+    "secret_seed": "random-string",
+    "admin": {
+      "username": "admin"
+    }
   },
   "challenges": [
     {
@@ -22,154 +25,6 @@
       },
       "ports": [
         { "internal": 80, "external": 8001 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "juice-shop",
-      "name": "OWASP Juice Shop",
-      "description": "A modern web application with a wide range of vulnerabilities.",
-      "category": "web",
-      "points": 100,
-      "image": "bkimminich/juice-shop:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 3000, "external": 8003 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "webgoat",
-      "name": "WebGoat",
-      "description": "A deliberately vulnerable web application for security training.",
-      "category": "web",
-      "points": 100,
-      "image": "webgoat/webgoat:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 8080, "external": 8004 }
-      ],
-      "path": "/WebGoat",
-      "environment": []
-    },
-    {
-      "id": "sqli",
-      "name": "SQL Injection Lab",
-      "description": "A lab for practicing SQL injection techniques.",
-      "category": "web",
-      "points": 100,
-      "image": "acgpiano/sqli-labs:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 80, "external": 8006 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "nowasp",
-      "name": "NoWASP",
-      "description": "A web application designed to be vulnerable to common web attacks.",
-      "category": "web",
-      "points": 100,
-      "image": "citizenstig/nowasp:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 80, "external": 8005 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "bwapp",
-      "name": "BWAPP",
-      "description": "A web application designed to be vulnerable to common web attacks.",
-      "category": "web",
-      "points": 100,
-      "image": "raesene/bwapp:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 80, "external": 8002 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "metasploitable",
-      "name": "Metasploitable",
-      "description": "A vulnerable Linux distribution for security testing.",
-      "category": "vulnerable",
-      "points": 200,
-      "image": "tleemcjr/metasploitable2:latest",
-      "memory": 256,
-      "command": ["bash", "-c", "tail -f /dev/null"],
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 22, "external": 2222 },
-        { "internal": 80, "external": 8007 },
-        { "internal": 445, "external": 4445 }
-      ],
-      "path": "",
-      "environment": []
-    },
-    {
-      "id": "source-hunt",
-      "name": "Source Hunt",
-      "description": "A small starter web challenge. Read the page, follow the hint, and find the flag.",
-      "category": "web",
-      "points": 50,
-      "image": "nginx:alpine",
-      "memory": 128,
-      "command": [
-        "/bin/sh",
-        "-c",
-        "cat <<'EOF' > /usr/share/nginx/html/index.html\n<!doctype html>\n<html lang='en'>\n<head><meta charset='utf-8'><title>Source Hunt</title></head>\n<body>\n  <h1>Source Hunt</h1>\n  <p>This is a simple learning challenge.</p>\n  <p>Start by reading the page source. If that does not help, check the usual web files.</p>\n  <!-- Hint: robots.txt knows where to look next. -->\n</body>\n</html>\nEOF\ncat <<'EOF' > /usr/share/nginx/html/robots.txt\nUser-agent: *\nDisallow: /flag.txt\nEOF\nnginx -g 'daemon off;'"
-      ],
-      "flag": {
-        "type": "file",
-        "path": "/usr/share/nginx/html/flag.txt",
-        "permissions": "0644",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 80, "external": 8010 }
       ],
       "path": "",
       "environment": []

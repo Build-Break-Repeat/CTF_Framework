@@ -36,7 +36,7 @@ SQLi Labs                   | 8006          | Port 80
 Metasploitable2 (SSH)       | 2222          | Port 22
 Metasploitable2 (HTTP)      | 8007          | Port 80
 Metasploitable2 (SMB)       | 4445          | Port 445
-CTFd Scoreboard             | 8000          | Port 8000
+CTFd Scoreboard             | 443           | Port 8000 (HTTPS via Caddy)
 
 Access Format: http://<server-ip>:<port>
 Example: http://192.168.1.100:8001 for DVWA
