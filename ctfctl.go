@@ -147,9 +147,16 @@ func printChallengeURLs() error {
     for _, c := range cfg.Challenges {
         for _, p := range c.Ports {
 
+            // SSH output for SSH ports
+            if p.External == 22 || p.External == 2222 {
+                fmt.Printf("%-30s ssh msfadmin@%s -p %d\n", c.Name, hostIP, p.External)
+                continue
+            }
+
+            // Default HTTP output
             url := fmt.Sprintf("http://%s:%d", hostIP, p.External)
 
-            // append path if present
+            // Append path if present
             if c.Path != "" {
                 if strings.HasPrefix(c.Path, "/") {
                     url += c.Path
