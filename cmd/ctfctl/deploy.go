@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 func runCommand(name string, args ...string) error {
@@ -26,13 +28,76 @@ func runScript(script string) error {
 	return cmd.Run()
 }
 
-func bootstrap() error {
-	err := runCommand("terraform", "-chdir=terraform/bootstrap", "init", "-input=false", "-upgrade")
-	if err != nil {
-		return err
+// verifyDockerGroup makes sure that if the current session does not have docker group
+// access, it checks if user is in docker group and adds if needed, then
+// it re-execs the current process under sg docker
+func verifyDockerGroup() error {
+	// Check if the current session already has docker group access
+	out, err := exec.Command("id", "-Gn").Output()
+	if err == nil {
+		if strings.Contains(string(out), "docker") {
+			return nil
+		}
 	}
 
-	err = runCommand("terraform", "-chdir=terraform/bootstrap", "apply", "-auto-approve")
+	// Check if the user is in the docker group but the session hasn't loaded it
+	user := os.Getenv("USER")
+	out, err = exec.Command("id", "-Gn", user).Output()
+	if err == nil && strings.Contains(string(out), "docker") {
+		fmt.Println("[*] User is in the docker group but the current session hasn't loaded it")
+		fmt.Println("[*] Reloading group membership...")
+
+		binaryPath, err := os.Executable()
+		if err != nil {
+			return errors.New("failed to resolve executable path: " + err.Error())
+		}
+
+		// Build the command string to pass to sg docker -c "..."
+		cmdStr := binaryPath
+		for i := 1; i < len(os.Args); i++ {
+			cmdStr += " " + os.Args[i]
+		}
+
+		sgPath, err := exec.LookPath("sg")
+		if err != nil {
+			return errors.New("sg command not found — cannot reload docker group")
+		}
+
+		// Replace this process with: sg docker -c "<binary> <args>"
+		return syscall.Exec(sgPath, []string{"sg", "docker", "-c", cmdStr}, os.Environ())
+	}
+
+	// User is not in the docker group at all — attempt to add with sudo
+	fmt.Println("[*] User '" + user + "' is not in the docker group")
+	fmt.Println("[*] Adding to docker group...")
+
+	err = runCommand("sudo", "usermod", "-aG", "docker", user)
+	if err != nil {
+		return errors.New("failed to add '" + user + "' to the docker group: " + err.Error())
+	}
+
+	fmt.Println("[*] Added '" + user + "' to the docker group. Reloading group membership...")
+
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return errors.New("failed to resolve executable path: " + err.Error())
+	}
+
+	cmdStr := binaryPath
+	for i := 1; i < len(os.Args); i++ {
+		cmdStr += " " + os.Args[i]
+	}
+
+	sgPath, err := exec.LookPath("sg")
+	if err != nil {
+		return errors.New("sg command not found — cannot reload docker group")
+	}
+
+	return syscall.Exec(sgPath, []string{"sg", "docker", "-c", cmdStr}, os.Environ())
+}
+
+func bootstrap() error {
+	err := runScript("scripts/terraform_bootstrap.sh")
 	if err != nil {
 		return err
 	}
@@ -43,6 +108,49 @@ func bootstrap() error {
 	}
 
 	return runCommand("python", "scripts/ctfd_bootstrap.py")
+}
+
+func deploy() error {
+	err := verifyDockerGroup()
+	if err != nil {
+		return err
+	}
+
+	err = runScript("scripts/check_deps.sh")
+	if err != nil {
+		return err
+	}
+
+	err = bootstrap()
+	if err != nil {
+		return err
+	}
+
+	err = runScript("scripts/terraform_deploy.sh")
+	if err != nil {
+		return err
+	}
+
+	return runScript("scripts/configure_firewall.sh")
+}
+
+func destroy() error {
+	err := verifyDockerGroup()
+	if err != nil {
+		return err
+	}
+
+	err = runScript("scripts/terraform_destroy_challenges.sh")
+	if err != nil {
+		return err
+	}
+
+	err = runScript("scripts/terraform_destroy_bootstrap.sh")
+	if err != nil {
+		return err
+	}
+
+	return runScript("scripts/remove_firewall.sh")
 }
 
 func getHostIP() string {

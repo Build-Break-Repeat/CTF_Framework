@@ -72,16 +72,16 @@ func main() {
 	if cmd == "help" {
 		help()
 	} else if cmd == "deploy" {
-		err = runScript("scripts/deploy.sh")
+		err = deploy()
 		if err == nil {
 			_ = printChallengeURLs()
 		}
 	} else if cmd == "destroy" {
-		err = runScript("scripts/destroy.sh")
+		err = destroy()
 	} else if cmd == "rebuild" {
-		err = runScript("scripts/destroy.sh")
+		err = destroy()
 		if err == nil {
-			err = runScript("scripts/deploy.sh")
+			err = deploy()
 			if err == nil {
 				_ = printChallengeURLs()
 			}
