@@ -23,6 +23,7 @@
       "ports": [
         { "internal": 80, "external": 8001 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -42,6 +43,7 @@
       "ports": [
         { "internal": 3000, "external": 8003 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -61,6 +63,7 @@
       "ports": [
         { "internal": 8080, "external": 8004 }
       ],
+      "path": "/WebGoat",
       "environment": []
     },
     {
@@ -80,6 +83,7 @@
       "ports": [
         { "internal": 80, "external": 8006 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -99,6 +103,7 @@
       "ports": [
         { "internal": 80, "external": 8005 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -118,6 +123,7 @@
       "ports": [
         { "internal": 80, "external": 8002 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -140,6 +146,7 @@
         { "internal": 80, "external": 8007 },
         { "internal": 445, "external": 4445 }
       ],
+      "path": "",
       "environment": []
     },
     {
@@ -164,6 +171,7 @@
       "ports": [
         { "internal": 80, "external": 8010 }
       ],
+      "path": "",
       "environment": []
     }
   ]
