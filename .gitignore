@@ -55,6 +55,10 @@ logs/
 *.swp
 *.swo
 
+# Go binaries
+**/ctfctl
+**/ctfctl.exe
+
 # Misc
 *.bak
 *.tmp

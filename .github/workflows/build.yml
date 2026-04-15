@@ -1,0 +1,34 @@
+name: Build ctfctl
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - "src/ctfctl/**"
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+
+    - name: Build Linux binary
+      working-directory: src/ctfctl
+      run: GOOS=linux GOARCH=amd64 go build -o ../../ctfctl .
+
+    - name: Commit binary
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add -f ctfctl
+        git diff --cached --quiet || git commit -m "ci: build ctfctl binary [skip ci]"
+        git push
