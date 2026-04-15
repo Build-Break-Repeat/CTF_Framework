@@ -65,7 +65,7 @@ resource "docker_container" "caddy" {
           redir https://{host}{uri} permanent
       }
     EOT
-    file = "/etc/caddy/Caddyfile"
+    file    = "/etc/caddy/Caddyfile"
   }
 
   depends_on = [docker_container.ctfd]
