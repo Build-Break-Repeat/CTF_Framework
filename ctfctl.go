@@ -10,11 +10,16 @@ import (
 )
 
 // Challenge struct for reading challenges.json
+type port struct {
+    Internal int `json:"internal"`
+    External int `json:"external"`
+}
+
 type challenge struct {
     ID     string `json:"id"`
     Name   string `json:"name"`
     Points int    `json:"points"`
-    Port   int    `json:"port"`
+    Ports  []port `json:"ports"`
 }
 
 // Wrapper struct for the JSON file
@@ -139,8 +144,8 @@ func printChallengeURLs() error {
     fmt.Println("----------------------------------------")
 
     for _, c := range cfg.Challenges {
-        if c.Port != 0 {
-            fmt.Printf("%-15s http://%s:%d\n", c.Name, hostIP, c.Port)
+        for _, p := range c.Ports {
+            fmt.Printf("%-30s http://%s:%d\n", c.Name, hostIP, p.External)
         }
     }
 
