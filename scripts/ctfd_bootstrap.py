@@ -18,7 +18,7 @@ ADMIN_PASSWORD_FILE = os.path.join(BASE_DIR, "admin_password.txt")
 CONFIG_FILE = "../challenges.json"
 MAX_RETRIES = 30
 SLEEP_INITIAL = 2     # Initial sleep
-SLEEP_MAX     = 15    # Max sleep time between checks
+SLEEP_MAX     = 10    # Max sleep time between checks
 SLEEP_FACTOR  = 1.5   # Multiply by this after each failed check
 LOG_TAIL_LINES = 20   # Lines to show on failure
 DEBUG = True
@@ -32,14 +32,6 @@ def debug(msg):
 # =========================
 # WAIT FOR CONTAINER
 # =========================
-def container_running(name: str) -> bool:
-    result = subprocess.run(
-        ["docker", "inspect", "-f", "{{.State.Running}}", name],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    return result.stdout.decode().strip() == "true"
-
 
 def ctfd_http_ready() -> bool:
     try:
@@ -61,18 +53,6 @@ def dump_logs(name: str):
     )
     print(result.stdout.decode())
 
-
-def wait_for_db() -> bool:
-    debug(f"[*] Waiting for {CTFD_CONTAINER}-db container...")
-    sleep = SLEEP_INITIAL
-    for i in range(MAX_RETRIES):
-        if container_running(f"{CTFD_CONTAINER}-db"):
-            debug("[+] Database container running")
-            return True
-        debug(f"Attempt {i + 1}/{MAX_RETRIES} — db not ready, retrying in {sleep:.0f}s")
-        time.sleep(sleep)
-        sleep = min(sleep * SLEEP_FACTOR, SLEEP_MAX)
-    return False
 
 
 def wait_for_ctfd() -> bool:
@@ -327,11 +307,6 @@ def main():
     if os.path.exists(TOKEN_OUTPUT_FILE):
         print("[*] Token file already exists, skipping bootstrap")
         return
-
-    if not wait_for_db():
-        print(f"[ERROR] {CTFD_CONTAINER}-db container never became ready")
-        dump_logs(f"{CTFD_CONTAINER}-db")
-        sys.exit(1)
 
     if not wait_for_ctfd():
         print("[ERROR] CTFd never became ready")
