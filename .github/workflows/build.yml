@@ -33,15 +33,9 @@ jobs:
     - name: Build Linux binary
       run: GOOS=linux GOARCH=amd64 go build -o ctfctl ./cmd/ctfctl
 
-    - name: Commit binary
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add -f ctfctl
-        if git diff --cached --quiet; then
-          echo "No changes to ctfctl binary, skipping commit."
-        else
-          git commit -m "ci: build ctfctl binary [skip ci]"
-          git pull --rebase
-          git push
-        fi
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: ctfctl ${{ steps.version.outputs.version }}
+        files: ctfctl

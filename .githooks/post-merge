@@ -1,0 +1,10 @@
+#!/bin/bash
+
+CHANGED=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null)
+
+if echo "$CHANGED" | grep -q "cmd/ctfctl"; then
+    echo "ctfctl was updated, downloading latest binary..."
+    curl -fsSL "https://github.com/Build-Break-Repeat/CTF_Framework/releases/latest/download/ctfctl" -o ./ctfctl
+    chmod +x ./ctfctl
+    echo "ctfctl updated."
+fi
