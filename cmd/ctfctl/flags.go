@@ -222,7 +222,6 @@ func httpInit(url string, body string, tokenField string) error {
 	fmt.Println("  Initializing via", url+"...")
 
 	for i := 0; i < 5; i++ {
-		var err error
 		postBody := body
 
 		if tokenField != "" {
@@ -253,7 +252,6 @@ func httpInit(url string, body string, tokenField string) error {
 			resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
-				err = fmt.Errorf("init returned status %d", resp.StatusCode)
 				time.Sleep(2 * time.Second)
 				continue
 			}
@@ -264,19 +262,16 @@ func httpInit(url string, body string, tokenField string) error {
 		// No CSRF token needed, just POST directly
 		resp, postErr := client.Post(url, "application/x-www-form-urlencoded", strings.NewReader(postBody))
 		if postErr != nil {
-			err = postErr
 			time.Sleep(2 * time.Second)
 			continue
 		}
 		resp.Body.Close()
 
 		if resp.StatusCode >= 400 {
-			err = fmt.Errorf("init returned status %d", resp.StatusCode)
 			time.Sleep(2 * time.Second)
 			continue
 		}
 
-		_ = err
 		return nil
 	}
 
