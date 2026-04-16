@@ -139,6 +139,11 @@ func deploy() error {
 		return err
 	}
 
+	err = flagsInject()
+	if err != nil {
+		return err
+	}
+
 	return runScript("scripts/configure_firewall.sh", scriptFlags()...)
 }
 

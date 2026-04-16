@@ -6,11 +6,26 @@ type port struct {
 }
 
 type challengeFlag struct {
-	Type        string `json:"type"`
-	Path        string `json:"path"`
+	Type    string `json:"type"`
+	Content string `json:"content,omitempty"`
+
+	// file
+	Path        string `json:"path,omitempty"`
 	Owner       string `json:"owner,omitempty"`
 	Permissions string `json:"permissions,omitempty"`
-	Content     string `json:"content,omitempty"`
+
+	// sql
+	Engine   string `json:"engine,omitempty"`   // "mysql" or "postgres"
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
+	Database string `json:"database,omitempty"`
+	Query    string `json:"query,omitempty"` // use %s as placeholder for the flag value
+
+	// api
+	URL     string            `json:"url,omitempty"`
+	Method  string            `json:"method,omitempty"` // defaults to POST
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    string            `json:"body,omitempty"` // use %s as placeholder for the flag value
 }
 
 type challenge struct {

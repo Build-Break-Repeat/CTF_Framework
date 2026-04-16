@@ -668,7 +668,11 @@ func challengeReset(args []string) error {
 		if err != nil {
 			return err
 		}
-		return runScript("scripts/terraform_deploy.sh", scriptFlags()...)
+		err = runScript("scripts/terraform_deploy.sh", scriptFlags()...)
+		if err != nil {
+			return err
+		}
+		return flagsInject()
 	}
 
 	// Specific challenge by ID
@@ -699,7 +703,12 @@ func challengeReset(args []string) error {
 		return err
 	}
 
-	return runCommand("sudo", "terraform", "-chdir=terraform/challenges", "apply", "-auto-approve", "-target="+target)
+	err = runCommand("sudo", "terraform", "-chdir=terraform/challenges", "apply", "-auto-approve", "-target="+target)
+	if err != nil {
+		return err
+	}
+
+	return flagsInject()
 }
 
 func challengeCommand(args []string) error {

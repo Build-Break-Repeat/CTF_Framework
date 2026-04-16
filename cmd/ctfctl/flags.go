@@ -4,10 +4,14 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var flagAdjectives = []string{
@@ -111,8 +115,137 @@ func flagsGenerate() error {
 
 	fmt.Println()
 	fmt.Println("Flags written to flags/ and recorded in challenges.json.")
-	fmt.Println("Run 'ctfctl flags inject' after containers are running to place them.")
+	fmt.Println("Run 'ctfctl deploy' or 'ctfctl reset' to mount them into containers.")
 	return nil
+}
+
+// runCommandSilent runs a command discarding all output, returning only exit status.
+func runCommandSilent(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run()
+}
+
+// withRetry calls fn up to maxTries times, sleeping delay between attempts.
+func withRetry(maxTries int, delay time.Duration, fn func() error) error {
+	var lastErr error
+	for i := 0; i < maxTries; i++ {
+		lastErr = fn()
+		if lastErr == nil {
+			return nil
+		}
+		if i < maxTries-1 {
+			time.Sleep(delay)
+		}
+	}
+	return lastErr
+}
+
+func injectSQL(c challenge, flag string) error {
+	f := c.Flag
+
+	if f.Engine != "mysql" && f.Engine != "postgres" {
+		return fmt.Errorf("unknown sql engine %q — must be \"mysql\" or \"postgres\"", f.Engine)
+	}
+
+	query := strings.ReplaceAll(f.Query, "%s", flag)
+
+	fmt.Println("  Waiting for database...")
+
+	err := withRetry(20, 3*time.Second, func() error {
+		if f.Engine == "mysql" {
+			return runCommandSilent("docker", "exec", c.ID,
+				"mysql", "-u"+f.User, "-p"+f.Password, f.Database,
+				"-e", query)
+		}
+		// postgres
+		return runCommandSilent("docker", "exec",
+			"-e", "PGPASSWORD="+f.Password,
+			c.ID, "psql", "-U", f.User, "-d", f.Database, "-c", query)
+	})
+
+	if err != nil {
+		return fmt.Errorf("sql injection failed: %w", err)
+	}
+	return nil
+}
+
+func injectAPI(c challenge, flag string) error {
+	f := c.Flag
+
+	method := f.Method
+	if method == "" {
+		method = "POST"
+	}
+
+	body := strings.ReplaceAll(f.Body, "%s", flag)
+
+	fmt.Println("  Waiting for API...")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	err := withRetry(20, 3*time.Second, func() error {
+		req, err := http.NewRequest(method, f.URL, strings.NewReader(body))
+		if err != nil {
+			return err
+		}
+
+		for k, v := range f.Headers {
+			req.Header.Set(k, v)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("API returned status %d", resp.StatusCode)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("api injection failed: %w", err)
+	}
+	return nil
+}
+
+// getOrCreateFlag returns the flag value for a challenge, generating and saving it if missing.
+func getOrCreateFlag(cfg *challengeConfig, i int) (string, error) {
+	c := cfg.Challenges[i]
+	flagFile := "flags/" + c.ID + ".txt"
+
+	data, err := os.ReadFile(flagFile)
+	if err == nil {
+		return strings.TrimSpace(string(data)), nil
+	}
+
+	prefix := cfg.Event.FlagPrefix
+	if prefix == "" {
+		prefix = "CTF"
+	}
+
+	err = os.MkdirAll("flags", 0755)
+	if err != nil {
+		return "", fmt.Errorf("failed to create flags directory: %w", err)
+	}
+
+	flag, err := computeFlag(prefix)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate flag for %s: %w", c.ID, err)
+	}
+
+	err = os.WriteFile(flagFile, []byte(flag+"\n"), 0600)
+	if err != nil {
+		return "", fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
+	}
+
+	cfg.Challenges[i].Flag.Content = flag
+	fmt.Printf("  Generated flag for %-20s %s\n", c.ID, flag)
+	return flag, nil
 }
 
 func flagsInject() error {
@@ -121,74 +254,72 @@ func flagsInject() error {
 		return err
 	}
 
+	// Check whether any challenges actually need injection before doing anything.
+	hasInjectable := false
+	for i := 0; i < len(cfg.Challenges); i++ {
+		t := ""
+		if cfg.Challenges[i].Flag != nil {
+			t = cfg.Challenges[i].Flag.Type
+		}
+		if t == "sql" || t == "api" {
+			hasInjectable = true
+			break
+		}
+	}
+	if !hasInjectable {
+		return nil
+	}
+
 	injected := 0
 	skipped := 0
+	cfgDirty := false
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
 
-		if c.Flag == nil {
+		if c.Flag == nil || c.Flag.Type == "file" || c.Flag.Type == "env" || c.Flag.Type == "" {
 			skipped++
 			continue
 		}
 
-		flagFile := "flags/" + c.ID + ".txt"
-		data, err := os.ReadFile(flagFile)
+		flag, err := getOrCreateFlag(&cfg, i)
 		if err != nil {
-			fmt.Println("  Skipping", c.ID, "— no flag file found (run 'ctfctl flags generate' first)")
+			fmt.Println("  Error generating flag for", c.ID+":", err)
+			skipped++
+			continue
+		}
+		if cfg.Challenges[i].Flag.Content == flag && c.Flag.Content != flag {
+			cfgDirty = true
+		}
+
+		fmt.Printf("Injecting %s (%s)...\n", c.ID, c.Flag.Type)
+
+		if c.Flag.Type == "sql" {
+			err = injectSQL(c, flag)
+		} else if c.Flag.Type == "api" {
+			err = injectAPI(c, flag)
+		} else {
+			fmt.Println("  Unknown flag type:", c.Flag.Type)
 			skipped++
 			continue
 		}
 
-		flagContent := strings.TrimSpace(string(data))
-		flagPath := c.Flag.Path
-		owner := c.Flag.Owner
-		if owner == "" {
-			owner = "root"
-		}
-		perms := c.Flag.Permissions
-		if perms == "" {
-			perms = "0600"
-		}
-
-		// Write to a temp file then docker cp into the container to avoid shell quoting
-		tmpFile, err := os.CreateTemp("", "ctfctl-flag-*")
 		if err != nil {
-			return fmt.Errorf("failed to create temp file for %s: %w", c.ID, err)
-		}
-		tmpPath := tmpFile.Name()
-
-		_, err = tmpFile.WriteString(flagContent + "\n")
-		tmpFile.Close()
-		if err != nil {
-			os.Remove(tmpPath)
-			return fmt.Errorf("failed to write temp flag for %s: %w", c.ID, err)
-		}
-
-		err = runCommand("docker", "cp", tmpPath, c.ID+":"+flagPath)
-		os.Remove(tmpPath)
-		if err != nil {
-			fmt.Println("  Warning: failed to copy flag into", c.ID, "—", err)
+			fmt.Println("  Error:", err)
 			skipped++
 			continue
 		}
 
-		err = runCommand("docker", "exec", c.ID, "chmod", perms, flagPath)
-		if err != nil {
-			fmt.Println("  Warning: failed to chmod", flagPath, "in", c.ID, "—", err)
-		}
-
-		err = runCommand("docker", "exec", c.ID, "chown", owner+":"+owner, flagPath)
-		if err != nil {
-			fmt.Println("  Warning: failed to chown", flagPath, "in", c.ID, "—", err)
-		}
-
-		fmt.Printf("  %-30s → %s\n", c.ID, flagPath)
+		fmt.Println("  Done.")
 		injected++
 	}
 
+	if cfgDirty {
+		_ = saveChallengeConfig(cfg)
+	}
+
 	fmt.Println()
-	fmt.Printf("Done. %d injected, %d skipped.\n", injected, skipped)
+	fmt.Printf("Flags injected: %d  skipped: %d\n", injected, skipped)
 	return nil
 }
 
