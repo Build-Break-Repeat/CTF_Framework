@@ -142,11 +142,64 @@ func withRetry(maxTries int, delay time.Duration, fn func() error) error {
 	return lastErr
 }
 
+func waitForHTTP(url string, contains string) error {
+	client := &http.Client{Timeout: 5 * time.Second}
+	fmt.Println("Waiting for ", url+"...")
+	return withRetry(30, 3*time.Second, func() error {
+		resp, err := client.Get(url)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if contains == "" {
+			return nil
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(body), contains) {
+			return fmt.Errorf("response did not contain %q", contains)
+		}
+		return nil
+	})
+}
+
+func httpInit(url string, body string) error {
+	client := &http.Client{Timeout: 10 * time.Second}
+	fmt.Println("  Initializing via", url+"...")
+	return withRetry(5, 2*time.Second, func() error {
+		resp, err := client.Post(url, "application/x-www-form-urlencoded", strings.NewReader(body))
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("init returned status %d", resp.StatusCode)
+		}
+		return nil
+	})
+}
+
 func injectSQL(c challenge, flag string) error {
 	f := c.Flag
 
 	if f.Engine != "mysql" && f.Engine != "postgres" {
 		return fmt.Errorf("unknown sql engine %q — must be \"mysql\" or \"postgres\"", f.Engine)
+	}
+
+	if f.ReadyURL != "" {
+		err := waitForHTTP(f.ReadyURL, f.ReadyContains)
+		if err != nil {
+			return fmt.Errorf("readiness check failed: %w", err)
+		}
+	}
+
+	if f.InitURL != "" {
+		err := httpInit(f.InitURL, f.InitBody)
+		if err != nil {
+			return fmt.Errorf("app init failed: %w", err)
+		}
 	}
 
 	query := strings.ReplaceAll(f.Query, "%s", flag)
@@ -155,9 +208,12 @@ func injectSQL(c challenge, flag string) error {
 
 	err := withRetry(20, 3*time.Second, func() error {
 		if f.Engine == "mysql" {
-			return runCommandSilent("docker", "exec", c.ID,
-				"mysql", "-u"+f.User, "-p"+f.Password, f.Database,
-				"-e", query)
+			args := []string{"exec", c.ID, "mysql", "-u" + f.User}
+			if f.Password != "" {
+				args = append(args, "-p"+f.Password)
+			}
+			args = append(args, f.Database, "-e", query)
+			return runCommandSilent("docker", args...)
 		}
 		// postgres
 		return runCommandSilent("docker", "exec",

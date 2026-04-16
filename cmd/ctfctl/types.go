@@ -15,11 +15,15 @@ type challengeFlag struct {
 	Permissions string `json:"permissions,omitempty"`
 
 	// sql
-	Engine   string `json:"engine,omitempty"`   // "mysql" or "postgres"
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
-	Database string `json:"database,omitempty"`
-	Query    string `json:"query,omitempty"` // use %s as placeholder for the flag value
+	Engine        string `json:"engine,omitempty"`         // "mysql" or "postgres"
+	User          string `json:"user,omitempty"`
+	Password      string `json:"password,omitempty"`
+	Database      string `json:"database,omitempty"`
+	Query         string `json:"query,omitempty"`          // use %s as placeholder for the flag value
+	ReadyURL      string `json:"ready_url,omitempty"`      // poll this URL before injecting
+	ReadyContains string `json:"ready_contains,omitempty"` // require this string in the ready response
+	InitURL       string `json:"init_url,omitempty"`       // POST to this URL to initialize the app (e.g. DB setup)
+	InitBody      string `json:"init_body,omitempty"`      // POST body for init_url
 
 	// api
 	URL     string            `json:"url,omitempty"`
