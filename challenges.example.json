@@ -18,10 +18,17 @@
       "image": "vulnerables/web-dvwa:latest",
       "memory": 256,
       "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "owner": "root",
-        "permissions": "0600"
+        "type": "sql",
+        "engine": "mysql",
+        "user": "root",
+        "password": "",
+        "database": "dvwa",
+        "query": "UPDATE users SET password=MD5('%s') WHERE user='admin'",
+        "ready_url": "http://localhost:8001",
+        "ready_contains": "DVWA",
+        "init_url": "http://localhost:8001/setup.php",
+        "init_body": "create_db=Create+%2F+Reset+Database",
+        "init_token_field": "user_token"
       },
       "ports": [
         { "internal": 80, "external": 8001 }
@@ -101,25 +108,6 @@
       },
       "ports": [
         { "internal": 80, "external": 8005 }
-      ],
-      "environment": []
-    },
-    {
-      "id": "bwapp",
-      "name": "BWAPP",
-      "description": "A web application designed to be vulnerable to common web attacks.",
-      "category": "web",
-      "points": 100,
-      "image": "raesene/bwapp:latest",
-      "memory": 256,
-      "flag": {
-        "type": "file",
-        "path": "/flag.txt",
-        "permissions": "0600",
-        "owner": "root"
-      },
-      "ports": [
-        { "internal": 80, "external": 8002 }
       ],
       "environment": []
     },

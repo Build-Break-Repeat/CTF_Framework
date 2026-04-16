@@ -10,6 +10,10 @@ import (
 	"syscall"
 )
 
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
+
 func runCommand(name string, args ...string) error {
 	fmt.Println("$", name, args)
 	cmd := exec.Command(name, args...)
@@ -61,9 +65,10 @@ func verifyDockerGroup() error {
 		}
 
 		// Build the command string to pass to sg docker -c "..."
-		cmdStr := binaryPath
+		// Each argument is single-quoted and internal single quotes are escaped.
+		cmdStr := shellQuote(binaryPath)
 		for i := 1; i < len(os.Args); i++ {
-			cmdStr += " " + os.Args[i]
+			cmdStr += " " + shellQuote(os.Args[i])
 		}
 
 		sgPath, err := exec.LookPath("sg")
@@ -91,9 +96,9 @@ func verifyDockerGroup() error {
 		return errors.New("failed to resolve executable path: " + err.Error())
 	}
 
-	cmdStr := binaryPath
+	cmdStr := shellQuote(binaryPath)
 	for i := 1; i < len(os.Args); i++ {
-		cmdStr += " " + os.Args[i]
+		cmdStr += " " + shellQuote(os.Args[i])
 	}
 
 	sgPath, err := exec.LookPath("sg")

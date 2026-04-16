@@ -22,11 +22,7 @@ resource "ctfd_flag" "flags" {
   for_each = var.challenges
 
   challenge_id = ctfd_challenge_standard.dynamic[each.key].id
-  content = lookup(
-    lookup(each.value, "flag", {}),
-    "content",
-    "flag{example}"
-  )
+  content      = trimspace(file("${path.module}/../../../flags/${each.key}.txt"))
 }
 
 terraform {
