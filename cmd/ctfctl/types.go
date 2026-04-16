@@ -10,6 +10,7 @@ type challengeFlag struct {
 	Path        string `json:"path"`
 	Owner       string `json:"owner,omitempty"`
 	Permissions string `json:"permissions,omitempty"`
+	Content     string `json:"content,omitempty"`
 }
 
 type challenge struct {
