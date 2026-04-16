@@ -103,128 +103,247 @@ func flagsGenerate() error {
 			return fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
 		}
 
-		cfg.Challenges[i].Flag.Content = flag
+		// If the challenge specifies custom permissions for the flag file, apply them.
+		// This is needed for file-type challenges where the web server needs to read the file.
+		if c.Flag.Permissions != "" {
+			var mode uint32
+			_, parseErr := fmt.Sscanf(c.Flag.Permissions, "%o", &mode)
+			if parseErr == nil {
+				os.Chmod(flagFile, os.FileMode(mode))
+			}
+		}
 
 		fmt.Printf("  %-30s %s\n", c.ID, flag)
 	}
 
-	err = saveChallengeConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to save challenges.json: %w", err)
-	}
-
 	fmt.Println()
-	fmt.Println("Flags written to flags/ and recorded in challenges.json.")
-	fmt.Println("Run 'ctfctl deploy' or 'ctfctl reset' to mount them into containers.")
+	fmt.Println("Flags written to flags/.")
+	fmt.Println("Run 'ctfctl deploy' or 'ctfctl reset' to inject them into containers.")
 	return nil
-}
-
-// runCommandSilent runs a command discarding all output, returning only exit status.
-func runCommandSilent(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	return cmd.Run()
-}
-
-// withRetry calls fn up to maxTries times, sleeping delay between attempts.
-func withRetry(maxTries int, delay time.Duration, fn func() error) error {
-	var lastErr error
-	for i := 0; i < maxTries; i++ {
-		lastErr = fn()
-		if lastErr == nil {
-			return nil
-		}
-		if i < maxTries-1 {
-			time.Sleep(delay)
-		}
-	}
-	return lastErr
 }
 
 func waitForHTTP(url string, contains string) error {
 	client := &http.Client{Timeout: 5 * time.Second}
-	fmt.Println("Waiting for ", url+"...")
-	return withRetry(30, 3*time.Second, func() error {
+	fmt.Println("  Waiting for", url+"...")
+
+	for i := 0; i < 30; i++ {
 		resp, err := client.Get(url)
 		if err != nil {
-			return err
+			time.Sleep(3 * time.Second)
+			continue
 		}
-		defer resp.Body.Close()
-		if contains == "" {
-			return nil
-		}
+
 		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
-			return err
+			time.Sleep(3 * time.Second)
+			continue
 		}
-		if !strings.Contains(string(body), contains) {
-			return fmt.Errorf("response did not contain %q", contains)
+
+		// If a string was specified, make sure the page contains it
+		if contains != "" && !strings.Contains(string(body), contains) {
+			time.Sleep(3 * time.Second)
+			continue
 		}
+
 		return nil
-	})
+	}
+
+	return fmt.Errorf("timed out waiting for %s", url)
 }
 
-func httpInit(url string, body string) error {
-	client := &http.Client{Timeout: 10 * time.Second}
+// getCSRFToken fetches a page and looks for a hidden form input named csrf
+func getCSRFToken(url string, client *http.Client, fieldName string) (string, []*http.Cookie, error) {
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", nil, err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Look for: name="fieldName" or name='fieldName'
+	// Then find the value= attribute right after it
+	page := string(body)
+	token := ""
+
+	// Try double quotes first, then single quotes
+	searchDoubleQuote := `name="` + fieldName + `"`
+	searchSingleQuote := `name='` + fieldName + `'`
+
+	var namePos int
+	if strings.Contains(page, searchDoubleQuote) {
+		namePos = strings.Index(page, searchDoubleQuote)
+	} else if strings.Contains(page, searchSingleQuote) {
+		namePos = strings.Index(page, searchSingleQuote)
+	} else {
+		return "", nil, fmt.Errorf("could not find field %q on page", fieldName)
+	}
+
+	// Look for value= after where we found the name
+	afterName := page[namePos:]
+
+	var valueContent string
+	if strings.Contains(afterName, `value="`) {
+		start := strings.Index(afterName, `value="`) + len(`value="`)
+		valueContent = afterName[start:]
+		end := strings.Index(valueContent, `"`)
+		if end != -1 {
+			token = valueContent[:end]
+		}
+	} else if strings.Contains(afterName, `value='`) {
+		start := strings.Index(afterName, `value='`) + len(`value='`)
+		valueContent = afterName[start:]
+		end := strings.Index(valueContent, `'`)
+		if end != -1 {
+			token = valueContent[:end]
+		}
+	}
+
+	if token == "" {
+		return "", nil, fmt.Errorf("could not read value of field %q on page", fieldName)
+	}
+
+	return token, resp.Cookies(), nil
+}
+
+func httpInit(url string, body string, tokenField string) error {
+	// Don't follow redirects automatically - a 302 after a form POST is normal
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
 	fmt.Println("  Initializing via", url+"...")
-	return withRetry(5, 2*time.Second, func() error {
-		resp, err := client.Post(url, "application/x-www-form-urlencoded", strings.NewReader(body))
-		if err != nil {
-			return err
+
+	for i := 0; i < 5; i++ {
+		var err error
+		postBody := body
+
+		if tokenField != "" {
+			token, cookies, tokenErr := getCSRFToken(url, client, tokenField)
+			if tokenErr != nil {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+
+			postBody = body + "&" + tokenField + "=" + token
+
+			req, reqErr := http.NewRequest("POST", url, strings.NewReader(postBody))
+			if reqErr != nil {
+				return reqErr
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+			// Add the session cookies from the GET request
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+
+			resp, doErr := client.Do(req)
+			if doErr != nil {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			resp.Body.Close()
+
+			if resp.StatusCode >= 400 {
+				err = fmt.Errorf("init returned status %d", resp.StatusCode)
+				time.Sleep(2 * time.Second)
+				continue
+			}
+
+			return nil
+		}
+
+		// No CSRF token needed, just POST directly
+		resp, postErr := client.Post(url, "application/x-www-form-urlencoded", strings.NewReader(postBody))
+		if postErr != nil {
+			err = postErr
+			time.Sleep(2 * time.Second)
+			continue
 		}
 		resp.Body.Close()
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return fmt.Errorf("init returned status %d", resp.StatusCode)
+
+		if resp.StatusCode >= 400 {
+			err = fmt.Errorf("init returned status %d", resp.StatusCode)
+			time.Sleep(2 * time.Second)
+			continue
 		}
+
+		_ = err
 		return nil
-	})
+	}
+
+	return fmt.Errorf("failed to initialize %s after several attempts", url)
 }
 
 func injectSQL(c challenge, flag string) error {
 	f := c.Flag
 
 	if f.Engine != "mysql" && f.Engine != "postgres" {
-		return fmt.Errorf("unknown sql engine %q — must be \"mysql\" or \"postgres\"", f.Engine)
+		return fmt.Errorf("unknown sql engine %q - must be \"mysql\" or \"postgres\"", f.Engine)
 	}
 
+	// Wait for the web app to be ready before trying to touch the database
 	if f.ReadyURL != "" {
 		err := waitForHTTP(f.ReadyURL, f.ReadyContains)
 		if err != nil {
-			return fmt.Errorf("readiness check failed: %w", err)
+			return fmt.Errorf("app never became ready: %w", err)
 		}
 	}
 
+	// Some apps need a setup step before the database tables exist (e.g. DVWA's setup.php)
 	if f.InitURL != "" {
-		err := httpInit(f.InitURL, f.InitBody)
+		err := httpInit(f.InitURL, f.InitBody, f.InitTokenField)
 		if err != nil {
 			return fmt.Errorf("app init failed: %w", err)
 		}
 	}
 
+	// Put the flag into the SQL query
 	query := strings.ReplaceAll(f.Query, "%s", flag)
 
 	fmt.Println("  Waiting for database...")
 
-	err := withRetry(20, 3*time.Second, func() error {
+	// Try up to 20 times in case the database is still starting up
+	for i := 0; i < 20; i++ {
+		var err error
+
 		if f.Engine == "mysql" {
 			args := []string{"exec", c.ID, "mysql", "-u" + f.User}
 			if f.Password != "" {
 				args = append(args, "-p"+f.Password)
 			}
 			args = append(args, f.Database, "-e", query)
-			return runCommandSilent("docker", args...)
-		}
-		// postgres
-		return runCommandSilent("docker", "exec",
-			"-e", "PGPASSWORD="+f.Password,
-			c.ID, "psql", "-U", f.User, "-d", f.Database, "-c", query)
-	})
 
-	if err != nil {
-		return fmt.Errorf("sql injection failed: %w", err)
+			cmd := exec.Command("docker", args...)
+			cmd.Stdout = io.Discard
+			cmd.Stderr = io.Discard
+			err = cmd.Run()
+		} else {
+			// postgres uses an environment variable for the password
+			cmd := exec.Command("docker", "exec",
+				"-e", "PGPASSWORD="+f.Password,
+				c.ID, "psql", "-U", f.User, "-d", f.Database, "-c", query)
+			cmd.Stdout = io.Discard
+			cmd.Stderr = io.Discard
+			err = cmd.Run()
+		}
+
+		if err == nil {
+			return nil
+		}
+
+		time.Sleep(3 * time.Second)
 	}
-	return nil
+
+	return fmt.Errorf("sql injection failed after several attempts")
 }
 
 func injectAPI(c challenge, flag string) error {
@@ -241,7 +360,8 @@ func injectAPI(c challenge, flag string) error {
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	err := withRetry(20, 3*time.Second, func() error {
+	// Try up to 20 times in case the service is still starting up
+	for i := 0; i < 20; i++ {
 		req, err := http.NewRequest(method, f.URL, strings.NewReader(body))
 		if err != nil {
 			return err
@@ -253,23 +373,23 @@ func injectAPI(c challenge, flag string) error {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return err
+			time.Sleep(3 * time.Second)
+			continue
 		}
 		resp.Body.Close()
 
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return fmt.Errorf("API returned status %d", resp.StatusCode)
+			time.Sleep(3 * time.Second)
+			continue
 		}
-		return nil
-	})
 
-	if err != nil {
-		return fmt.Errorf("api injection failed: %w", err)
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("api injection failed after several attempts")
 }
 
-// getOrCreateFlag returns the flag value for a challenge, generating and saving it if missing.
+// getOrCreateFlag returns the flag for a challenge. If no flag file exists yet it generates one.
 func getOrCreateFlag(cfg *challengeConfig, i int) (string, error) {
 	c := cfg.Challenges[i]
 	flagFile := "flags/" + c.ID + ".txt"
@@ -299,7 +419,6 @@ func getOrCreateFlag(cfg *challengeConfig, i int) (string, error) {
 		return "", fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
 	}
 
-	cfg.Challenges[i].Flag.Content = flag
 	fmt.Printf("  Generated flag for %-20s %s\n", c.ID, flag)
 	return flag, nil
 }
@@ -310,29 +429,13 @@ func flagsInject() error {
 		return err
 	}
 
-	// Check whether any challenges actually need injection before doing anything.
-	hasInjectable := false
-	for i := 0; i < len(cfg.Challenges); i++ {
-		t := ""
-		if cfg.Challenges[i].Flag != nil {
-			t = cfg.Challenges[i].Flag.Type
-		}
-		if t == "sql" || t == "api" {
-			hasInjectable = true
-			break
-		}
-	}
-	if !hasInjectable {
-		return nil
-	}
-
 	injected := 0
 	skipped := 0
-	cfgDirty := false
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
 
+		// Skip challenges that don't need active injection
 		if c.Flag == nil || c.Flag.Type == "file" || c.Flag.Type == "env" || c.Flag.Type == "" {
 			skipped++
 			continue
@@ -343,9 +446,6 @@ func flagsInject() error {
 			fmt.Println("  Error generating flag for", c.ID+":", err)
 			skipped++
 			continue
-		}
-		if cfg.Challenges[i].Flag.Content == flag && c.Flag.Content != flag {
-			cfgDirty = true
 		}
 
 		fmt.Printf("Injecting %s (%s)...\n", c.ID, c.Flag.Type)
@@ -368,10 +468,6 @@ func flagsInject() error {
 
 		fmt.Println("  Done.")
 		injected++
-	}
-
-	if cfgDirty {
-		_ = saveChallengeConfig(cfg)
 	}
 
 	fmt.Println()

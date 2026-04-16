@@ -6,8 +6,7 @@ type port struct {
 }
 
 type challengeFlag struct {
-	Type    string `json:"type"`
-	Content string `json:"content,omitempty"`
+	Type string `json:"type"`
 
 	// file
 	Path        string `json:"path,omitempty"`
@@ -22,8 +21,9 @@ type challengeFlag struct {
 	Query         string `json:"query,omitempty"`          // use %s as placeholder for the flag value
 	ReadyURL      string `json:"ready_url,omitempty"`      // poll this URL before injecting
 	ReadyContains string `json:"ready_contains,omitempty"` // require this string in the ready response
-	InitURL       string `json:"init_url,omitempty"`       // POST to this URL to initialize the app (e.g. DB setup)
-	InitBody      string `json:"init_body,omitempty"`      // POST body for init_url
+	InitURL        string `json:"init_url,omitempty"`        // POST to this URL to initialize the app (e.g. DB setup)
+	InitBody       string `json:"init_body,omitempty"`       // POST body for init_url
+	InitTokenField string `json:"init_token_field,omitempty"` // hidden input name to extract as CSRF token before POSTing
 
 	// api
 	URL     string            `json:"url,omitempty"`
