@@ -664,11 +664,11 @@ func challengeEdit(args []string) error {
 func challengeReset(args []string) error {
 	// No ID — reset all challenges
 	if len(args) == 0 {
-		err := runScript("scripts/terraform_destroy_challenges.sh")
+		err := runScript("scripts/terraform_destroy_challenges.sh", scriptFlags()...)
 		if err != nil {
 			return err
 		}
-		return runScript("scripts/terraform_deploy.sh")
+		return runScript("scripts/terraform_deploy.sh", scriptFlags()...)
 	}
 
 	// Specific challenge by ID

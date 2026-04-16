@@ -10,6 +10,7 @@ const version = "1.0.1"
 const challengeFile = "challenges.json"
 
 var noColor bool
+var autoInstall bool
 
 func bold(s string) string {
 	if noColor {
@@ -34,6 +35,7 @@ func help() {
 	fmt.Println(bold("Global flags:"))
 	fmt.Printf("  %-30s %s\n", "--no-color", "Disable ANSI color output")
 	fmt.Printf("  %-30s %s\n", "--version", "Print version and exit")
+	fmt.Printf("  %-30s %s\n", "--auto-install, -a", "Automatically install any missing dependencies")
 	fmt.Println()
 	fmt.Println(bold("Commands:"))
 	fmt.Printf("  %-30s %s\n", "deploy", "Deploy everything (deps -> bootstrap -> challenges -> firewall)")
@@ -55,6 +57,8 @@ func main() {
 		} else if a == "--version" {
 			fmt.Println("ctfctl v" + version)
 			os.Exit(0)
+		} else if a == "--auto-install" || a == "-a" {
+			autoInstall = true
 		} else {
 			filteredArgs = append(filteredArgs, a)
 		}

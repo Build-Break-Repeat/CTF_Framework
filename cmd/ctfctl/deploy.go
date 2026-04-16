@@ -19,9 +19,17 @@ func runCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
-func runScript(script string) error {
-	fmt.Println("$ bash", script)
-	cmd := exec.Command("bash", script)
+func scriptFlags() []string {
+	if autoInstall {
+		return []string{"-a"}
+	}
+	return []string{}
+}
+
+func runScript(script string, extraArgs ...string) error {
+	args := append([]string{script}, extraArgs...)
+	fmt.Println("$ bash", args)
+	cmd := exec.Command("bash", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -97,7 +105,7 @@ func verifyDockerGroup() error {
 }
 
 func bootstrap() error {
-	err := runScript("scripts/terraform_bootstrap.sh")
+	err := runScript("scripts/terraform_bootstrap.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
@@ -111,12 +119,12 @@ func bootstrap() error {
 }
 
 func deploy() error {
-	err := verifyDockerGroup()
+	err := runScript("scripts/check_deps.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
 
-	err = runScript("scripts/check_deps.sh")
+	err = verifyDockerGroup()
 	if err != nil {
 		return err
 	}
@@ -126,12 +134,12 @@ func deploy() error {
 		return err
 	}
 
-	err = runScript("scripts/terraform_deploy.sh")
+	err = runScript("scripts/terraform_deploy.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
 
-	return runScript("scripts/configure_firewall.sh")
+	return runScript("scripts/configure_firewall.sh", scriptFlags()...)
 }
 
 func destroy() error {
@@ -140,17 +148,17 @@ func destroy() error {
 		return err
 	}
 
-	err = runScript("scripts/terraform_destroy_challenges.sh")
+	err = runScript("scripts/terraform_destroy_challenges.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
 
-	err = runScript("scripts/terraform_destroy_bootstrap.sh")
+	err = runScript("scripts/terraform_destroy_bootstrap.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
 
-	return runScript("scripts/remove_firewall.sh")
+	return runScript("scripts/remove_firewall.sh", scriptFlags()...)
 }
 
 func getHostIP() string {
