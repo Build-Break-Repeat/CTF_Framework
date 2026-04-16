@@ -1,5 +1,5 @@
 locals {
-  challenges_list = jsondecode(file("${path.module}/../../challenges.json")).challenges
+  challenges_list = jsondecode(file("${path.module}/../../config.json")).challenges
 
   challenges = {
     for c in local.challenges_list :
