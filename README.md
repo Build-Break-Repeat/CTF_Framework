@@ -29,16 +29,15 @@ Inject generated flags into the running challenge containers:
 python3 scripts/injectflags.py
 
 Current workflow:
-1. Challenge names come from terraform/challenges.json.
-2. Generated files are written under flags/<challenge-name>/team#.txt.
+1. Challenge names come from config.json.
+2. Generated files are written under flags/<challenge-name>.txt.
 3. injectflags.py copies those team files into matching Docker containers.
 4. By default, flags go to /flags inside each container.
 
 To run ctfctl:
-sudo apt install golang-go -y
-git clone -b build-control-script https://github.com/Build-Break-Repeat/CTF_Framework.git
+git clone https://github.com/Build-Break-Repeat/CTF_Framework.git
 cd CTF_Framework
-chmod +x ctfctl
+bash init.sh
 
 ./ctfctl deploy
 ./ctfctl destroy

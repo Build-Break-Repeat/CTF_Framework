@@ -7,7 +7,7 @@ import (
 )
 
 const version = "1.0.2"
-const challengeFile = "challenges.json"
+const challengeFile = "config.json"
 
 var noColor bool
 var autoInstall bool
