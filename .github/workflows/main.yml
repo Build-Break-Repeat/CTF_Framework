@@ -19,6 +19,11 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -52,6 +57,12 @@ jobs:
       working-directory: terraform
       run: terraform validate
 
+    - name: Run Go unit tests
+      run: go test ./cmd/ctfctl/... -v -count=1 -timeout 30s
+
+    - name: Run Python unit tests
+      run: python -m pytest tests/test_ctfd_bootstrap.py -v
+
     - name: Install BATS
       run: |
         git clone https://github.com/bats-core/bats-core.git
@@ -59,4 +70,3 @@ jobs:
 
     - name: Run Bash tests
       run: bats tests/
-
