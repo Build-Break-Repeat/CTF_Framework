@@ -15,7 +15,7 @@ CTFD_CONTAINER = "ctfd"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOKEN_OUTPUT_FILE = os.path.join(BASE_DIR, "terraform", "ctfd_token.txt")
 ADMIN_PASSWORD_FILE = os.path.join(BASE_DIR, "admin_password.txt")
-CONFIG_FILE = "../config.json"
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 MAX_RETRIES = 30
 SLEEP_INITIAL = 2     # Initial sleep
 SLEEP_MAX     = 10    # Max sleep time between checks
@@ -118,8 +118,7 @@ def check_output(output: str, context: str):
 # LOAD CONFIG
 # =========================
 def load_config() -> dict:
-    path = os.path.join(os.path.dirname(__file__), CONFIG_FILE)
-    with open(path) as f:
+    with open(CONFIG_FILE) as f:
         return json.load(f)
 
 
@@ -187,9 +186,9 @@ def run_setup(cfg: dict):
 
     event = cfg["event"]
     ctf_name = event["name"]
-    # config.json uses an integer team count; CTFd user_mode is "users" or "teams"
-    user_mode = "teams" if event.get("teams", 0) > 1 else "users"
-    team_size = event.get("teams", None)
+    # max_team_size of 1 means solo event (user mode); anything higher means team mode
+    user_mode = "teams" if event.get("max_team_size", 1) > 1 else "users"
+    team_size = event.get("max_team_size", None)
 
     ctf_name_escaped = ctf_name.replace('"', '\\"')
 

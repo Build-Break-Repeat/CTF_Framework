@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,26 @@ import (
 	"strings"
 	"testing"
 )
+
+// writeFlagsConfig writes cfg to a config.json in dir and points challengeFile
+// at it. Returns the old challengeFile value so the caller can restore it.
+// These tests also need os.Chdir(dir) so that relative flag file paths work.
+func writeFlagsConfig(t *testing.T, dir string, cfg challengeConfig) string {
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		t.Fatalf("writeFlagsConfig: marshal failed: %v", err)
+	}
+
+	path := filepath.Join(dir, "config.json")
+	err = os.WriteFile(path, data, 0644)
+	if err != nil {
+		t.Fatalf("writeFlagsConfig: write failed: %v", err)
+	}
+
+	old := challengeFile
+	challengeFile = path
+	return old
+}
 
 // ---- computeFlag ----
 
@@ -36,7 +57,8 @@ func TestComputeFlag_format(t *testing.T) {
 	}
 
 	num := 0
-	for _, c := range parts[2] {
+	for i := 0; i < len(parts[2]); i++ {
+		c := parts[2][i]
 		if c < '0' || c > '9' {
 			t.Errorf("numeric part %q contains non-digit character", parts[2])
 			break
@@ -87,9 +109,6 @@ func TestComputeFlag_specialCharPrefix(t *testing.T) {
 func TestFlagsGenerate_createsFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	oldFile := challengeFile
-	defer func() { challengeFile = oldFile }()
-
 	cfg := challengeConfig{
 		Event: eventConfig{FlagPrefix: "test"},
 		Challenges: []challenge{
@@ -97,20 +116,25 @@ func TestFlagsGenerate_createsFiles(t *testing.T) {
 			{ID: "ch2", Name: "Chall 2", Flag: &challengeFlag{Type: "sql"}},
 		},
 	}
-	challengeFile = writeTempConfig(t, dir, cfg)
+
+	old := writeFlagsConfig(t, dir, cfg)
+	defer func() { challengeFile = old }()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
-	if err := flagsGenerate(); err != nil {
+	err = flagsGenerate()
+	if err != nil {
 		t.Fatalf("flagsGenerate: %v", err)
 	}
 
-	for _, id := range []string{"ch1", "ch2"} {
-		path := filepath.Join(dir, "flags", id+".txt")
+	ids := []string{"ch1", "ch2"}
+	for i := 0; i < len(ids); i++ {
+		path := filepath.Join(dir, "flags", ids[i]+".txt")
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("flag file %s not created: %v", path, err)
@@ -126,27 +150,29 @@ func TestFlagsGenerate_createsFiles(t *testing.T) {
 func TestFlagsGenerate_skipsNilFlag(t *testing.T) {
 	dir := t.TempDir()
 
-	oldFile := challengeFile
-	defer func() { challengeFile = oldFile }()
-
 	cfg := challengeConfig{
 		Event:      eventConfig{FlagPrefix: "test"},
 		Challenges: []challenge{{ID: "no-flag", Name: "No Flag", Flag: nil}},
 	}
-	challengeFile = writeTempConfig(t, dir, cfg)
+
+	old := writeFlagsConfig(t, dir, cfg)
+	defer func() { challengeFile = old }()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
-	if err := flagsGenerate(); err != nil {
+	err = flagsGenerate()
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	path := filepath.Join(dir, "flags", "no-flag.txt")
-	if _, err := os.Stat(path); err == nil {
+	_, err = os.Stat(path)
+	if err == nil {
 		t.Error("expected no flag file for nil-flag challenge, but file was created")
 	}
 }
@@ -154,22 +180,23 @@ func TestFlagsGenerate_skipsNilFlag(t *testing.T) {
 func TestFlagsGenerate_defaultPrefix(t *testing.T) {
 	dir := t.TempDir()
 
-	oldFile := challengeFile
-	defer func() { challengeFile = oldFile }()
-
 	cfg := challengeConfig{
 		Event:      eventConfig{FlagPrefix: ""},
 		Challenges: []challenge{{ID: "ch", Name: "Chall", Flag: &challengeFlag{Type: "file"}}},
 	}
-	challengeFile = writeTempConfig(t, dir, cfg)
+
+	old := writeFlagsConfig(t, dir, cfg)
+	defer func() { challengeFile = old }()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
-	if err := flagsGenerate(); err != nil {
+	err = flagsGenerate()
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -187,31 +214,35 @@ func TestFlagsGenerate_defaultPrefix(t *testing.T) {
 func TestFlagsEnsure_doesNotOverwrite(t *testing.T) {
 	dir := t.TempDir()
 
-	oldFile := challengeFile
-	defer func() { challengeFile = oldFile }()
-
 	cfg := challengeConfig{
 		Event:      eventConfig{FlagPrefix: "test"},
 		Challenges: []challenge{{ID: "existing", Name: "Existing", Flag: &challengeFlag{Type: "file"}}},
 	}
-	challengeFile = writeTempConfig(t, dir, cfg)
+
+	old := writeFlagsConfig(t, dir, cfg)
+	defer func() { challengeFile = old }()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
 	flagsDir := filepath.Join(dir, "flags")
-	if err := os.MkdirAll(flagsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	existing := "test{original_flag_123}"
-	if err := os.WriteFile(filepath.Join(flagsDir, "existing.txt"), []byte(existing+"\n"), 0600); err != nil {
+	err = os.MkdirAll(flagsDir, 0755)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := flagsEnsure(); err != nil {
+	existing := "test{original_flag_123}"
+	err = os.WriteFile(filepath.Join(flagsDir, "existing.txt"), []byte(existing+"\n"), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = flagsEnsure()
+	if err != nil {
 		t.Fatalf("flagsEnsure: %v", err)
 	}
 
@@ -227,22 +258,23 @@ func TestFlagsEnsure_doesNotOverwrite(t *testing.T) {
 func TestFlagsEnsure_generatesForMissing(t *testing.T) {
 	dir := t.TempDir()
 
-	oldFile := challengeFile
-	defer func() { challengeFile = oldFile }()
-
 	cfg := challengeConfig{
 		Event:      eventConfig{FlagPrefix: "ens"},
 		Challenges: []challenge{{ID: "new-ch", Name: "New", Flag: &challengeFlag{Type: "file"}}},
 	}
-	challengeFile = writeTempConfig(t, dir, cfg)
+
+	old := writeFlagsConfig(t, dir, cfg)
+	defer func() { challengeFile = old }()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
-	if err := flagsEnsure(); err != nil {
+	err = flagsEnsure()
+	if err != nil {
 		t.Fatalf("flagsEnsure: %v", err)
 	}
 
@@ -261,16 +293,20 @@ func TestGetOrCreateFlag_readsExisting(t *testing.T) {
 	dir := t.TempDir()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
 
-	if err := os.MkdirAll(filepath.Join(dir, "flags"), 0755); err != nil {
+	err = os.MkdirAll(filepath.Join(dir, "flags"), 0755)
+	if err != nil {
 		t.Fatal(err)
 	}
+
 	existing := "bbr{my_existing_flag_999}"
-	if err := os.WriteFile(filepath.Join(dir, "flags", "ch1.txt"), []byte(existing+"\n"), 0600); err != nil {
+	err = os.WriteFile(filepath.Join(dir, "flags", "ch1.txt"), []byte(existing+"\n"), 0600)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -292,7 +328,8 @@ func TestGetOrCreateFlag_generatesNew(t *testing.T) {
 	dir := t.TempDir()
 
 	oldDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	err := os.Chdir(dir)
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chdir(oldDir)
@@ -394,7 +431,6 @@ func TestGetCSRFToken_singleQuoteValue(t *testing.T) {
 }
 
 func TestGetCSRFToken_wrongFieldNameIgnored(t *testing.T) {
-	// The value on the wrong field should not leak into the right field's result
 	html := `<html><body>
 		<input name="other_field" value="should_not_return_this">
 		<input name="csrf_token" value="correct_token">
@@ -439,7 +475,7 @@ func TestInjectSQL_unknownEngine(t *testing.T) {
 	}
 }
 
-// ---- injectAPI default method ----
+// ---- injectAPI ----
 
 func TestInjectAPI_usesDefaultPOST(t *testing.T) {
 	received := ""
@@ -514,7 +550,8 @@ func TestInjectAPI_sendsHeaders(t *testing.T) {
 		},
 	}
 
-	if err := injectAPI(c, "test{flag_789}"); err != nil {
+	err := injectAPI(c, "test{flag_789}")
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if receivedCT != "application/json" {
@@ -525,9 +562,12 @@ func TestInjectAPI_sendsHeaders(t *testing.T) {
 func TestInjectAPI_substitutesFlagInBody(t *testing.T) {
 	receivedBody := ""
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var sb strings.Builder
-		io.Copy(&sb, r.Body)
-		receivedBody = sb.String()
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		receivedBody = string(bodyBytes)
 		w.WriteHeader(200)
 	}))
 	defer ts.Close()
@@ -542,11 +582,11 @@ func TestInjectAPI_substitutesFlagInBody(t *testing.T) {
 		},
 	}
 
-	if err := injectAPI(c, "bbr{my_flag_999}"); err != nil {
+	err := injectAPI(c, "bbr{my_flag_999}")
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(receivedBody, "bbr{my_flag_999}") {
 		t.Errorf("body %q does not contain flag", receivedBody)
 	}
 }
-

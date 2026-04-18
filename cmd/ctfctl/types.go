@@ -42,6 +42,7 @@ type challenge struct {
 	Image       string         `json:"image,omitempty"`
 	Memory      int            `json:"memory,omitempty"`
 	Flag        *challengeFlag `json:"flag,omitempty"`
+	Command     []string       `json:"command,omitempty"`
 	Ports       []port         `json:"ports,omitempty"`
 	Environment []string       `json:"environment,omitempty"`
 }
@@ -53,7 +54,7 @@ type eventAdmin struct {
 
 type eventConfig struct {
 	Name       string     `json:"name,omitempty"`
-	Teams      int        `json:"teams,omitempty"`
+	MaxTeamSize int        `json:"max_team_size,omitempty"`
 	FlagPrefix string     `json:"flag_prefix,omitempty"`
 	SecretSeed string     `json:"secret_seed,omitempty"`
 	Admin      eventAdmin `json:"admin"`

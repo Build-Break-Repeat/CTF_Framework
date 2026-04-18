@@ -103,16 +103,6 @@ func flagsGenerate() error {
 			return fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
 		}
 
-		// If the challenge specifies custom permissions for the flag file, apply them.
-		// This is needed for file-type challenges where the web server needs to read the file.
-		if c.Flag.Permissions != "" {
-			var mode uint32
-			_, parseErr := fmt.Sscanf(c.Flag.Permissions, "%o", &mode)
-			if parseErr == nil {
-				os.Chmod(flagFile, os.FileMode(mode))
-			}
-		}
-
 		fmt.Printf("  %-30s %s\n", c.ID, flag)
 	}
 
@@ -152,7 +142,9 @@ func waitForHTTP(url string, contains string) error {
 	return fmt.Errorf("timed out waiting for %s", url)
 }
 
-// getCSRFToken fetches a page and looks for a hidden form input named csrf
+// getCSRFToken fetches a page and looks for a hidden form input named fieldName,
+// then returns its value. It searches within the <input> tag itself so that a
+// value= attribute on a different element cannot be mistakenly returned.
 func getCSRFToken(url string, client *http.Client, fieldName string) (string, []*http.Cookie, error) {
 	resp, err := client.Get(url)
 	if err != nil {
@@ -165,49 +157,62 @@ func getCSRFToken(url string, client *http.Client, fieldName string) (string, []
 		return "", nil, err
 	}
 
-	// Look for: name="fieldName" or name='fieldName'
-	// Then find the value= attribute right after it
 	page := string(body)
-	token := ""
 
-	// Try double quotes first, then single quotes
-	searchDoubleQuote := `name="` + fieldName + `"`
-	searchSingleQuote := `name='` + fieldName + `'`
+	// Find an <input tag that contains name="fieldName" or name='fieldName'.
+	// We scan for each <input opening and inspect only the characters up to
+	// the closing > of that tag.
+	searchTag := "<input"
+	nameDoubleQuote := `name="` + fieldName + `"`
+	nameSingleQuote := `name='` + fieldName + `'`
 
-	var namePos int
-	if strings.Contains(page, searchDoubleQuote) {
-		namePos = strings.Index(page, searchDoubleQuote)
-	} else if strings.Contains(page, searchSingleQuote) {
-		namePos = strings.Index(page, searchSingleQuote)
-	} else {
-		return "", nil, fmt.Errorf("could not find field %q on page", fieldName)
-	}
-
-	// Look for value= after where we found the name
-	afterName := page[namePos:]
-
-	var valueContent string
-	if strings.Contains(afterName, `value="`) {
-		start := strings.Index(afterName, `value="`) + len(`value="`)
-		valueContent = afterName[start:]
-		end := strings.Index(valueContent, `"`)
-		if end != -1 {
-			token = valueContent[:end]
+	pos := 0
+	for {
+		tagStart := strings.Index(page[pos:], searchTag)
+		if tagStart == -1 {
+			break
 		}
-	} else if strings.Contains(afterName, `value='`) {
-		start := strings.Index(afterName, `value='`) + len(`value='`)
-		valueContent = afterName[start:]
-		end := strings.Index(valueContent, `'`)
-		if end != -1 {
-			token = valueContent[:end]
+		tagStart += pos
+
+		// Find the end of this tag (closing >)
+		tagEnd := strings.Index(page[tagStart:], ">")
+		if tagEnd == -1 {
+			break
 		}
+		tagEnd += tagStart
+
+		tag := page[tagStart : tagEnd+1]
+
+		if strings.Contains(tag, nameDoubleQuote) || strings.Contains(tag, nameSingleQuote) {
+			// Extract value= from within this tag only
+			token := ""
+			if strings.Contains(tag, `value="`) {
+				start := strings.Index(tag, `value="`) + len(`value="`)
+				rest := tag[start:]
+				end := strings.Index(rest, `"`)
+				if end != -1 {
+					token = rest[:end]
+				}
+			} else if strings.Contains(tag, `value='`) {
+				start := strings.Index(tag, `value='`) + len(`value='`)
+				rest := tag[start:]
+				end := strings.Index(rest, `'`)
+				if end != -1 {
+					token = rest[:end]
+				}
+			}
+
+			if token == "" {
+				return "", nil, fmt.Errorf("found field %q but could not read its value", fieldName)
+			}
+
+			return token, resp.Cookies(), nil
+		}
+
+		pos = tagEnd + 1
 	}
 
-	if token == "" {
-		return "", nil, fmt.Errorf("could not read value of field %q on page", fieldName)
-	}
-
-	return token, resp.Cookies(), nil
+	return "", nil, fmt.Errorf("could not find field %q on page", fieldName)
 }
 
 func httpInit(url string, body string, tokenField string) error {
@@ -311,18 +316,15 @@ func injectSQL(c challenge, flag string) error {
 		var err error
 
 		if f.Engine == "mysql" {
-			args := []string{"exec", c.ID, "mysql", "-u" + f.User}
-			if f.Password != "" {
-				args = append(args, "-p"+f.Password)
-			}
-			args = append(args, f.Database, "-e", query)
+			// Pass the password via MYSQL_PWD so it doesn't appear in the process list.
+			args := []string{"exec", "-e", "MYSQL_PWD=" + f.Password, c.ID, "mysql", "-u" + f.User, f.Database, "-e", query}
 
 			cmd := exec.Command("docker", args...)
 			cmd.Stdout = io.Discard
 			cmd.Stderr = io.Discard
 			err = cmd.Run()
 		} else {
-			// postgres uses an environment variable for the password
+			// Pass the password via PGPASSWORD so it doesn't appear in the process list.
 			cmd := exec.Command("docker", "exec",
 				"-e", "PGPASSWORD="+f.Password,
 				c.ID, "psql", "-U", f.User, "-d", f.Database, "-c", query)
@@ -382,6 +384,53 @@ func injectAPI(c challenge, flag string) error {
 	}
 
 	return fmt.Errorf("api injection failed after several attempts")
+}
+
+// flagsEnsure creates flag files for any challenge that doesn't have one yet.
+// It never overwrites existing files, so it is safe to call before every deploy.
+func flagsEnsure() error {
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	prefix := cfg.Event.FlagPrefix
+	if prefix == "" {
+		prefix = "CTF"
+	}
+
+	err = os.MkdirAll("flags", 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create flags directory: %w", err)
+	}
+
+	for i := 0; i < len(cfg.Challenges); i++ {
+		c := cfg.Challenges[i]
+
+		if c.Flag == nil {
+			continue
+		}
+
+		flagFile := "flags/" + c.ID + ".txt"
+
+		if _, statErr := os.Stat(flagFile); statErr == nil {
+			continue
+		}
+
+		flag, err := computeFlag(prefix)
+		if err != nil {
+			return fmt.Errorf("failed to generate flag for %s: %w", c.ID, err)
+		}
+
+		err = os.WriteFile(flagFile, []byte(flag+"\n"), 0600)
+		if err != nil {
+			return fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
+		}
+
+		fmt.Printf("  Generated flag for %-20s %s\n", c.ID, flag)
+	}
+
+	return nil
 }
 
 // getOrCreateFlag returns the flag for a challenge. If no flag file exists yet it generates one.

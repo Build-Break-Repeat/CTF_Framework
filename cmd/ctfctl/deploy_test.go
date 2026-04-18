@@ -16,11 +16,9 @@ func TestShellQuote_noSpecialChars(t *testing.T) {
 
 func TestShellQuote_withSingleQuote(t *testing.T) {
 	got := shellQuote("it's")
-	// Single quotes inside should be escaped as: '\''
 	if !strings.Contains(got, `'\''`) {
 		t.Errorf("shellQuote(\"it's\") = %q; does not contain escaped single quote", got)
 	}
-	// Should still be wrapped in outer single quotes
 	if !strings.HasPrefix(got, "'") || !strings.HasSuffix(got, "'") {
 		t.Errorf("shellQuote result %q should start and end with single quote", got)
 	}
@@ -36,7 +34,6 @@ func TestShellQuote_emptyString(t *testing.T) {
 func TestShellQuote_multipleSpecialChars(t *testing.T) {
 	input := "a'b'c"
 	got := shellQuote(input)
-	// Should escape both single quotes
 	if strings.Count(got, `'\''`) != 2 {
 		t.Errorf("shellQuote(%q) = %q; expected 2 escaped single quotes", input, got)
 	}
@@ -44,7 +41,6 @@ func TestShellQuote_multipleSpecialChars(t *testing.T) {
 
 func TestShellQuote_spacesAndSymbols(t *testing.T) {
 	got := shellQuote("hello world $VAR")
-	// Spaces and $ should be safe inside single quotes; no escaping needed
 	if !strings.Contains(got, "hello world $VAR") {
 		t.Errorf("shellQuote(\"hello world $VAR\") = %q; should contain original string", got)
 	}
@@ -77,7 +73,6 @@ func TestScriptFlags_autoInstallFalse(t *testing.T) {
 // ---- getHostIP ----
 
 func TestGetHostIP_returnsString(t *testing.T) {
-	// Just verify it returns something non-empty (either a real IP or "localhost")
 	ip := getHostIP()
 	if ip == "" {
 		t.Error("getHostIP() returned empty string")
@@ -96,12 +91,14 @@ func TestPrintChallengeURLs_SSHPort(t *testing.T) {
 			},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		err := printChallengeURLs()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestPrintChallengeURLs_WebPort(t *testing.T) {
@@ -115,12 +112,14 @@ func TestPrintChallengeURLs_WebPort(t *testing.T) {
 			},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		err := printChallengeURLs()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestPrintChallengeURLs_NoPorts(t *testing.T) {
@@ -129,12 +128,14 @@ func TestPrintChallengeURLs_NoPorts(t *testing.T) {
 			{ID: "noport", Name: "No Port Challenge"},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		err := printChallengeURLs()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestPrintChallengeURLs_PathWithLeadingSlash(t *testing.T) {
@@ -148,11 +149,14 @@ func TestPrintChallengeURLs_PathWithLeadingSlash(t *testing.T) {
 			},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		if err := printChallengeURLs(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestPrintChallengeURLs_PathWithoutLeadingSlash(t *testing.T) {
@@ -166,11 +170,14 @@ func TestPrintChallengeURLs_PathWithoutLeadingSlash(t *testing.T) {
 			},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		if err := printChallengeURLs(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestPrintChallengeURLs_Port2222IsSSH(t *testing.T) {
@@ -183,9 +190,12 @@ func TestPrintChallengeURLs_Port2222IsSSH(t *testing.T) {
 			},
 		},
 	}
-	withChallengeFile(t, cfg, func() {
-		if err := printChallengeURLs(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
+
+	old := setupConfig(t, cfg)
+	defer func() { challengeFile = old }()
+
+	err := printChallengeURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }

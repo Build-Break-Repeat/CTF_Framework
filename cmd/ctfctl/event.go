@@ -21,7 +21,7 @@ func eventShow() error {
 
 	fmt.Println("Event:")
 	fmt.Println("  Name:        ", e.Name)
-	fmt.Println("  Teams:       ", strconv.Itoa(e.Teams))
+	fmt.Println("  Max team size:", strconv.Itoa(e.MaxTeamSize))
 	fmt.Println("  Flag prefix: ", e.FlagPrefix)
 	fmt.Println("  Seed:        ", e.SecretSeed)
 	fmt.Println("  Admin:       ", e.Admin.Username)
@@ -33,7 +33,7 @@ func eventEdit(args []string) error {
 	fs := goflag.NewFlagSet("event edit", goflag.ContinueOnError)
 
 	fsName := fs.String("name", "", "")
-	fsTeams := fs.Int("teams", 0, "")
+	fsMaxTeamSize := fs.Int("max-team-size", 0, "")
 	fsFlagPrefix := fs.String("flag-prefix", "", "")
 	fsSeed := fs.String("seed", "", "")
 	fsAdmin := fs.String("admin", "", "")
@@ -57,10 +57,10 @@ func eventEdit(args []string) error {
 		e.Name = promptField("Event name", e.Name)
 	}
 
-	if *fsTeams != 0 {
-		e.Teams = *fsTeams
+	if *fsMaxTeamSize != 0 {
+		e.MaxTeamSize = *fsMaxTeamSize
 	} else {
-		e.Teams = promptInt("Teams", e.Teams)
+		e.MaxTeamSize = promptInt("Max team size (1 = solo event)", e.MaxTeamSize)
 	}
 
 	if *fsFlagPrefix != "" {

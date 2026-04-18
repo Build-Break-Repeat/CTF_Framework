@@ -115,12 +115,17 @@ func bootstrap() error {
 		return err
 	}
 
-	err = runCommand("python3", "scripts/ctfd_bootstrap.py")
+	_, err = exec.LookPath("python3")
 	if err == nil {
-		return nil
+		return runCommand("python3", "scripts/ctfd_bootstrap.py")
 	}
 
-	return runCommand("python", "scripts/ctfd_bootstrap.py")
+	_, err = exec.LookPath("python")
+	if err == nil {
+		return runCommand("python", "scripts/ctfd_bootstrap.py")
+	}
+
+	return errors.New("python3 or python is required to bootstrap CTFd but neither was found")
 }
 
 func deploy() error {
@@ -135,6 +140,16 @@ func deploy() error {
 	}
 
 	err = bootstrap()
+	if err != nil {
+		return err
+	}
+
+	err = flagsEnsure()
+	if err != nil {
+		return err
+	}
+
+	err = flagsEnsure()
 	if err != nil {
 		return err
 	}
@@ -158,17 +173,17 @@ func destroy() error {
 		return err
 	}
 
+	err = runScript("scripts/remove_firewall.sh", scriptFlags()...)
+	if err != nil {
+		return err
+	}
+
 	err = runScript("scripts/terraform_destroy_challenges.sh", scriptFlags()...)
 	if err != nil {
 		return err
 	}
 
-	err = runScript("scripts/terraform_destroy_bootstrap.sh", scriptFlags()...)
-	if err != nil {
-		return err
-	}
-
-	return runScript("scripts/remove_firewall.sh", scriptFlags()...)
+	return runScript("scripts/terraform_destroy_bootstrap.sh", scriptFlags()...)
 }
 
 func getHostIP() string {

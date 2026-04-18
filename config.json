@@ -1,11 +1,12 @@
 {
   "event": {
     "name": "Spring 2026 CTF",
-    "teams": 8,
-    "flag_prefix": "CTF",
+    "max_team_size": 3,
+    "flag_prefix": "bbr",
     "secret_seed": "random-string",
     "admin": {
-      "username": "admin"
+      "username": "admin",
+      "password": "demo123"
     }
   },
   "challenges": [
@@ -57,8 +58,8 @@
           "external": 3000
         }
       ]
-    }
-  ,{
+    },
+    {
       "id": "source-hunt",
       "name": "Source Hunt",
       "description": "There's something hidden on this web server. Start by reading the page carefully — the answer to where to look next is right in front of you.",
@@ -71,15 +72,18 @@
         "-c",
         "cat <<'EOF' > /usr/share/nginx/html/index.html\n<!doctype html>\n<html lang='en'>\n<head><meta charset='utf-8'><title>Source Hunt</title></head>\n<body>\n  <h1>Source Hunt</h1>\n  <p>This is a simple learning challenge.</p>\n  <p>Start by reading the page source. If that does not help, check the usual web files.</p>\n  <!-- Hint: robots.txt knows where to look next. -->\n</body>\n</html>\nEOF\ncat <<'EOF' > /usr/share/nginx/html/robots.txt\nUser-agent: *\nDisallow: /flag.txt\nEOF\nnginx -g 'daemon off;'"
       ],
-      "flag": {
+            "flag": {
         "type": "file",
         "path": "/usr/share/nginx/html/flag.txt",
-        "permissions": "0644",
-        "owner": "root"
+        "owner": "root",
+        "permissions": "0644"
       },
       "ports": [
-        { "internal": 80, "external": 8010 }
+        {
+          "internal": 80,
+          "external": 8010
+        }
       ]
-    }
+    }    
   ]
 }

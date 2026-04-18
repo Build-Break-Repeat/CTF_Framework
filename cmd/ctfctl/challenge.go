@@ -119,6 +119,88 @@ func resolvePorts(inputs []string) ([]port, error) {
 	return promptPorts(), nil
 }
 
+func promptCommand() []string {
+	fmt.Println("Command override (leave blank for image default):")
+	fmt.Println("  Enter each argument on its own line. Leave blank when done.")
+
+	var result []string
+	for {
+		raw := promptField("Arg", "")
+		if raw == "" {
+			break
+		}
+		result = append(result, raw)
+	}
+	return result
+}
+
+func resolveCommand(inputs []string) []string {
+	if len(inputs) > 0 {
+		return inputs
+	}
+	return promptCommand()
+}
+
+func editCommand(current []string) []string {
+	result := []string{}
+	for i := 0; i < len(current); i++ {
+		result = append(result, current[i])
+	}
+
+	for {
+		fmt.Println("Command override:")
+		if len(result) == 0 {
+			fmt.Println("  (none — image default)")
+		}
+		for i := 0; i < len(result); i++ {
+			fmt.Printf("  %d) %s\n", i+1, result[i])
+		}
+
+		fmt.Print("  [a]dd  [r]emove <n>  [c]lear  [done]: ")
+		line, _ := stdinReader.ReadString('\n')
+		input := strings.TrimSpace(line)
+
+		if input == "" || input == "done" || input == "d" {
+			break
+		}
+
+		if input == "a" {
+			raw := promptField("Arg", "")
+			if raw == "" {
+				continue
+			}
+			result = append(result, raw)
+			continue
+		}
+
+		if input == "c" {
+			result = []string{}
+			continue
+		}
+
+		if strings.HasPrefix(input, "r ") {
+			numStr := strings.TrimPrefix(input, "r ")
+			n, err := strconv.Atoi(strings.TrimSpace(numStr))
+			if err != nil || n < 1 || n > len(result) {
+				fmt.Println("  Invalid selection")
+				continue
+			}
+			updated := []string{}
+			for i := 0; i < len(result); i++ {
+				if i+1 != n {
+					updated = append(updated, result[i])
+				}
+			}
+			result = updated
+			continue
+		}
+
+		fmt.Println("  Unknown option")
+	}
+
+	return result
+}
+
 func promptEnv() []string {
 	var result []string
 
@@ -267,7 +349,29 @@ func challengeShow(args []string) error {
 	fmt.Println("Memory:     ", strconv.Itoa(c.Memory)+"MB")
 
 	if c.Flag != nil {
-		fmt.Println("Flag path:  ", c.Flag.Path)
+		fmt.Println("Flag type:  ", c.Flag.Type)
+		if c.Flag.Type == "file" || c.Flag.Type == "" {
+			fmt.Println("Flag path:  ", c.Flag.Path)
+			fmt.Println("Flag owner: ", c.Flag.Owner)
+			fmt.Println("Flag perms: ", c.Flag.Permissions)
+		} else if c.Flag.Type == "sql" {
+			fmt.Println("DB engine:  ", c.Flag.Engine)
+			fmt.Println("DB user:    ", c.Flag.User)
+			fmt.Println("DB name:    ", c.Flag.Database)
+			fmt.Println("DB query:   ", c.Flag.Query)
+			fmt.Println("Ready URL:  ", c.Flag.ReadyURL)
+			fmt.Println("Init URL:   ", c.Flag.InitURL)
+		} else if c.Flag.Type == "api" {
+			fmt.Println("API URL:    ", c.Flag.URL)
+			fmt.Println("API method: ", c.Flag.Method)
+			fmt.Println("API body:   ", c.Flag.Body)
+		} else if c.Flag.Type == "env" {
+			fmt.Println("(flag injected via environment variable)")
+		}
+	}
+
+	if len(c.Command) > 0 {
+		fmt.Println("Command:    ", strings.Join(c.Command, " "))
 	}
 
 	fmt.Println("Ports:")
@@ -296,6 +400,113 @@ func challengeList() error {
 	return nil
 }
 
+func promptFlagConfig(existing *challengeFlag) *challengeFlag {
+	flagType := ""
+	if existing != nil {
+		flagType = existing.Type
+	}
+	flagType = promptField("Flag type (file, sql, api, env, or leave blank for none)", flagType)
+
+	if flagType == "" {
+		return nil
+	}
+
+	f := challengeFlag{}
+	f.Type = flagType
+
+	if flagType == "file" {
+		existingPath := "/flag.txt"
+		existingOwner := "root"
+		existingPerms := "0600"
+		if existing != nil && existing.Type == "file" {
+			existingPath = existing.Path
+			existingOwner = existing.Owner
+			existingPerms = existing.Permissions
+		}
+		f.Path = promptField("Flag file path inside container", existingPath)
+		f.Owner = promptField("File owner", existingOwner)
+		f.Permissions = promptField("File permissions (octal)", existingPerms)
+
+	} else if flagType == "sql" {
+		existingEngine := "mysql"
+		existingUser := ""
+		existingPassword := ""
+		existingDatabase := ""
+		existingQuery := ""
+		existingReadyURL := ""
+		existingReadyContains := ""
+		existingInitURL := ""
+		existingInitBody := ""
+		existingInitTokenField := ""
+		if existing != nil && existing.Type == "sql" {
+			existingEngine = existing.Engine
+			existingUser = existing.User
+			existingPassword = existing.Password
+			existingDatabase = existing.Database
+			existingQuery = existing.Query
+			existingReadyURL = existing.ReadyURL
+			existingReadyContains = existing.ReadyContains
+			existingInitURL = existing.InitURL
+			existingInitBody = existing.InitBody
+			existingInitTokenField = existing.InitTokenField
+		}
+		f.Engine = promptField("DB engine (mysql or postgres)", existingEngine)
+		f.User = promptField("DB user", existingUser)
+		f.Password = promptField("DB password", existingPassword)
+		f.Database = promptField("DB name", existingDatabase)
+		f.Query = promptField("SQL query (use %s as flag placeholder)", existingQuery)
+		f.ReadyURL = promptField("Ready URL (poll before injecting, optional)", existingReadyURL)
+		f.ReadyContains = promptField("Ready URL must contain (optional)", existingReadyContains)
+		f.InitURL = promptField("Init URL (POST to initialize app, optional)", existingInitURL)
+		f.InitBody = promptField("Init POST body (optional)", existingInitBody)
+		f.InitTokenField = promptField("Init CSRF token field name (optional)", existingInitTokenField)
+
+	} else if flagType == "api" {
+		existingURL := ""
+		existingMethod := "POST"
+		existingBody := ""
+		if existing != nil && existing.Type == "api" {
+			existingURL = existing.URL
+			existingMethod = existing.Method
+			existingBody = existing.Body
+		}
+		f.URL = promptField("API URL", existingURL)
+		f.Method = promptField("HTTP method", existingMethod)
+		f.Body = promptField("Request body (use %s as flag placeholder)", existingBody)
+
+		fmt.Println("Headers (Name: Value, leave blank when done):")
+		if existing != nil && existing.Type == "api" && len(existing.Headers) > 0 {
+			f.Headers = existing.Headers
+			for k, v := range f.Headers {
+				fmt.Println("  Existing header:", k+": "+v)
+			}
+		}
+		headers := map[string]string{}
+		for {
+			raw := promptField("Header", "")
+			if raw == "" {
+				break
+			}
+			parts := strings.SplitN(raw, ":", 2)
+			if len(parts) != 2 {
+				fmt.Println("  Invalid format, use Name: Value")
+				continue
+			}
+			headers[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		}
+		if len(headers) > 0 {
+			f.Headers = headers
+		}
+
+	} else if flagType == "env" {
+		fmt.Println("  (flag will be injected via environment variable — set the variable name in the Environment list)")
+	} else {
+		fmt.Println("  Unknown flag type:", flagType)
+	}
+
+	return &f
+}
+
 func challengeAdd(args []string) error {
 	fs := goflag.NewFlagSet("challenge add", goflag.ContinueOnError)
 
@@ -312,6 +523,12 @@ func challengeAdd(args []string) error {
 	var fsPorts []string
 	fs.Func("port", "", func(v string) error {
 		fsPorts = append(fsPorts, v)
+		return nil
+	})
+
+	var fsCommand []string
+	fs.Func("command", "", func(v string) error {
+		fsCommand = append(fsCommand, v)
 		return nil
 	})
 
@@ -356,19 +573,18 @@ func challengeAdd(args []string) error {
 		c.Memory = promptInt("Memory (MB)", 256)
 	}
 
-	flagPath := *fsFlagPath
-	if flagPath == "" {
-		flagPath = promptField("Flag path", "/flag.txt")
-	}
-
-	if flagPath != "" {
+	if *fsFlagPath != "" {
 		f := challengeFlag{}
 		f.Type = "file"
-		f.Path = flagPath
+		f.Path = *fsFlagPath
 		f.Owner = "root"
 		f.Permissions = "0600"
 		c.Flag = &f
+	} else {
+		c.Flag = promptFlagConfig(nil)
 	}
+
+	c.Command = resolveCommand(fsCommand)
 
 	ports, err := resolvePorts(fsPorts)
 	if err != nil {
@@ -539,6 +755,12 @@ func challengeEdit(args []string) error {
 		return nil
 	})
 
+	var fsCommand []string
+	fs.Func("command", "", func(v string) error {
+		fsCommand = append(fsCommand, v)
+		return nil
+	})
+
 	var fsEnvs []string
 	fs.Func("env", "", func(v string) error {
 		fsEnvs = append(fsEnvs, v)
@@ -605,19 +827,8 @@ func challengeEdit(args []string) error {
 		c.Memory = promptInt("Memory (MB)", c.Memory)
 	}
 
-	existingFlagPath := ""
-	if c.Flag != nil {
-		existingFlagPath = c.Flag.Path
-	}
-
-	flagPath := ""
 	if *fsFlagPath != "" {
-		flagPath = *fsFlagPath
-	} else {
-		flagPath = promptField("Flag path", existingFlagPath)
-	}
-
-	if flagPath != "" {
+		// --flag-path CLI flag: shortcut for file-type only
 		if c.Flag == nil {
 			f := challengeFlag{}
 			f.Type = "file"
@@ -625,7 +836,15 @@ func challengeEdit(args []string) error {
 			f.Permissions = "0600"
 			c.Flag = &f
 		}
-		c.Flag.Path = flagPath
+		c.Flag.Path = *fsFlagPath
+	} else {
+		c.Flag = promptFlagConfig(c.Flag)
+	}
+
+	if len(fsCommand) > 0 {
+		c.Command = fsCommand
+	} else {
+		c.Command = editCommand(c.Command)
 	}
 
 	if len(fsPorts) > 0 {
@@ -668,6 +887,14 @@ func challengeReset(args []string) error {
 		if err != nil {
 			return err
 		}
+		err = flagsEnsure()
+		if err != nil {
+			return err
+		}
+		err = flagsEnsure()
+		if err != nil {
+			return err
+		}
 		err = runScript("scripts/terraform_deploy.sh", scriptFlags()...)
 		if err != nil {
 			return err
@@ -698,7 +925,17 @@ func challengeReset(args []string) error {
 
 	target := "module.challenges.docker_container.challenge_containers[\"" + id + "\"]"
 
+	err = runCommand("terraform", "-chdir=terraform/challenges", "init", "-input=false", "-upgrade")
+	if err != nil {
+		return err
+	}
+
 	err = runCommand("sudo", "terraform", "-chdir=terraform/challenges", "destroy", "-auto-approve", "-target="+target)
+	if err != nil {
+		return err
+	}
+
+	err = flagsEnsure()
 	if err != nil {
 		return err
 	}
