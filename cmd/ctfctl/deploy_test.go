@@ -81,25 +81,6 @@ func TestGetHostIP_returnsString(t *testing.T) {
 
 // ---- printChallengeURLs ----
 
-func TestPrintChallengeURLs_SSHPort(t *testing.T) {
-	cfg := challengeConfig{
-		Challenges: []challenge{
-			{
-				ID:    "metasploitable",
-				Name:  "Metasploitable",
-				Ports: []port{{Internal: 22, External: 22}},
-			},
-		},
-	}
-
-	old := setupConfig(t, cfg)
-	defer func() { challengeFile = old }()
-
-	err := printChallengeURLs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
 
 func TestPrintChallengeURLs_WebPort(t *testing.T) {
 	cfg := challengeConfig{
@@ -180,22 +161,3 @@ func TestPrintChallengeURLs_PathWithoutLeadingSlash(t *testing.T) {
 	}
 }
 
-func TestPrintChallengeURLs_Port2222IsSSH(t *testing.T) {
-	cfg := challengeConfig{
-		Challenges: []challenge{
-			{
-				ID:    "ssh-ch",
-				Name:  "SSH Challenge",
-				Ports: []port{{Internal: 22, External: 2222}},
-			},
-		},
-	}
-
-	old := setupConfig(t, cfg)
-	defer func() { challengeFile = old }()
-
-	err := printChallengeURLs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-}

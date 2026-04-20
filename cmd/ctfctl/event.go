@@ -4,7 +4,7 @@ import (
 	"errors"
 	goflag "flag"
 	"fmt"
-	"strconv"
+	"strings"
 )
 
 // -----------------------
@@ -19,12 +19,15 @@ func eventShow() error {
 
 	e := cfg.Event
 
-	fmt.Println("Event:")
-	fmt.Println("  Name:        ", e.Name)
-	fmt.Println("  Max team size:", strconv.Itoa(e.MaxTeamSize))
-	fmt.Println("  Flag prefix: ", e.FlagPrefix)
-	fmt.Println("  Seed:        ", e.SecretSeed)
-	fmt.Println("  Admin:       ", e.Admin.Username)
+	fmt.Println()
+	fmt.Println(bold("Event Configuration"))
+	fmt.Println(strings.Repeat("-", 40))
+	fmt.Printf("  %-16s %s\n", "Name:", e.Name)
+	fmt.Printf("  %-16s %d\n", "Max team size:", e.MaxTeamSize)
+	fmt.Printf("  %-16s %s\n", "Flag prefix:", e.FlagPrefix)
+	fmt.Printf("  %-16s %s\n", "Seed:", e.SecretSeed)
+	fmt.Printf("  %-16s %s\n", "Admin:", e.Admin.Username)
+	fmt.Println()
 
 	return nil
 }
@@ -98,12 +101,30 @@ func eventEdit(args []string) error {
 	return nil
 }
 
+func eventHelp() {
+	fmt.Println(bold("ctfctl event"))
+	fmt.Println()
+	fmt.Println(bold("Usage:"))
+	fmt.Println("  ctfctl event <subcommand>")
+	fmt.Println()
+	fmt.Println(bold("Subcommands:"))
+	fmt.Printf("  %-20s %s\n", "show", "Display current event configuration")
+	fmt.Printf("  %-20s %s\n", "edit", "Edit event settings (name, team size, flag prefix, admin)")
+	fmt.Printf("  %-20s %s\n", "help", "Show this message")
+}
+
 func eventCommand(args []string) error {
 	if len(args) == 0 {
-		return errors.New("event subcommand required (show, edit)")
+		eventHelp()
+		return errors.New("event subcommand required")
 	}
 
 	sub := args[0]
+
+	if sub == "help" || sub == "--help" || sub == "-h" {
+		eventHelp()
+		return nil
+	}
 
 	if sub == "show" {
 		return eventShow()
@@ -113,5 +134,5 @@ func eventCommand(args []string) error {
 		return eventEdit(args[1:])
 	}
 
-	return errors.New("unknown event subcommand: " + sub)
+	return errors.New("unknown event subcommand: " + sub + " (run 'ctfctl event help' for usage)")
 }

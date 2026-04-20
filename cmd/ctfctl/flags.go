@@ -108,7 +108,7 @@ func flagsGenerate() error {
 
 	fmt.Println()
 	fmt.Println("Flags written to flags/.")
-	fmt.Println("Run 'ctfctl deploy' or 'ctfctl reset' to inject them into containers.")
+	fmt.Println("Run 'ctfctl deploy' or 'ctfctl ch reload' to deploy them into containers.")
 	return nil
 }
 
@@ -474,21 +474,20 @@ func flagsInject() error {
 	}
 
 	injected := 0
-	skipped := 0
+	failed := 0
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
 
-		// Skip challenges that don't need active injection
+		// file and env flags are handled automatically by Terraform/Docker — no active injection needed
 		if c.Flag == nil || c.Flag.Type == "file" || c.Flag.Type == "env" || c.Flag.Type == "" {
-			skipped++
 			continue
 		}
 
 		flag, err := getOrCreateFlag(&cfg, i)
 		if err != nil {
 			fmt.Println("  Error generating flag for", c.ID+":", err)
-			skipped++
+			failed++
 			continue
 		}
 
@@ -500,13 +499,13 @@ func flagsInject() error {
 			err = injectAPI(c, flag)
 		} else {
 			fmt.Println("  Unknown flag type:", c.Flag.Type)
-			skipped++
+			failed++
 			continue
 		}
 
 		if err != nil {
 			fmt.Println("  Error:", err)
-			skipped++
+			failed++
 			continue
 		}
 
@@ -515,16 +514,40 @@ func flagsInject() error {
 	}
 
 	fmt.Println()
-	fmt.Printf("Flags injected: %d  skipped: %d\n", injected, skipped)
+	if failed > 0 {
+		fmt.Printf("Flags injected: %d  failed: %d\n", injected, failed)
+	} else {
+		fmt.Printf("Flags injected: %d\n", injected)
+	}
 	return nil
+}
+
+func flagsHelp() {
+	fmt.Println(bold("ctfctl flags"))
+	fmt.Println()
+	fmt.Println(bold("Usage:"))
+	fmt.Println("  ctfctl flags <subcommand>")
+	fmt.Println()
+	fmt.Println(bold("Subcommands:"))
+	fmt.Printf("  %-20s %s\n", "generate", "Generate new flag files for all challenges")
+	fmt.Printf("  %-20s %s\n", "inject", "Inject flags into running challenge containers (sql/api types)")
+	fmt.Printf("  %-20s %s\n", "help", "Show this message")
+	fmt.Println()
+	fmt.Println(dim("Note: file and env type flags are handled automatically by Terraform."))
 }
 
 func flagsCommand(args []string) error {
 	if len(args) == 0 {
-		return errors.New("flags subcommand required (generate, inject)")
+		flagsHelp()
+		return errors.New("flags subcommand required")
 	}
 
 	sub := args[0]
+
+	if sub == "help" || sub == "--help" || sub == "-h" {
+		flagsHelp()
+		return nil
+	}
 
 	if sub == "generate" {
 		return flagsGenerate()
@@ -534,5 +557,5 @@ func flagsCommand(args []string) error {
 		return flagsInject()
 	}
 
-	return errors.New("unknown flags subcommand: " + sub)
+	return errors.New("unknown flags subcommand: " + sub + " (run 'ctfctl flags help' for usage)")
 }

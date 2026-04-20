@@ -30,7 +30,7 @@ func help() {
 	fmt.Println(bold("ctfctl") + " " + dim("v"+version))
 	fmt.Println()
 	fmt.Println(bold("Usage:"))
-	fmt.Println("  ctfctl [--no-color] [--version] <command>")
+	fmt.Println("  ctfctl [--no-color] [--version] [--auto-install] <command>")
 	fmt.Println()
 	fmt.Println(bold("Global flags:"))
 	fmt.Printf("  %-30s %s\n", "--no-color", "Disable ANSI color output")
@@ -42,12 +42,13 @@ func help() {
 	fmt.Printf("  %-30s %s\n", "bootstrap", "Install and configure CTFd (idempotent)")
 	fmt.Printf("  %-30s %s\n", "destroy", "Tear down all containers and state")
 	fmt.Printf("  %-30s %s\n", "rebuild", "destroy -> deploy in one shot")
-	fmt.Printf("  %-30s %s\n", "reset", "Destroy and redeploy all challenge containers")
-	fmt.Printf("  %-30s %s\n", "challenge (ch)", "Manage challenges")
+	fmt.Printf("  %-30s %s\n", "challenge (ch)", "Manage challenges (add, edit, reload, pull, ...)")
 	fmt.Printf("  %-30s %s\n", "event", "Manage event configuration")
-	fmt.Printf("  %-30s %s\n", "flags", "Manage flags (subcommands: generate, inject)")
+	fmt.Printf("  %-30s %s\n", "flags", "Manage flags (generate, inject)")
 	fmt.Printf("  %-30s %s\n", "status", "Show running state of all challenge containers")
 	fmt.Printf("  %-30s %s\n", "help", "Show this message")
+	fmt.Println()
+	fmt.Println(dim("Run 'ctfctl <command> help' for subcommand details."))
 }
 
 func main() {
@@ -75,7 +76,7 @@ func main() {
 	args := filteredArgs[1:]
 	var err error
 
-	if cmd == "help" {
+	if cmd == "help" || cmd == "--help" || cmd == "-h" {
 		help()
 	} else if cmd == "deploy" {
 		err = deploy()
@@ -88,14 +89,6 @@ func main() {
 		err = destroy()
 		if err == nil {
 			err = deploy()
-			if err == nil {
-				_ = printChallengeURLs()
-			}
-		}
-	} else if cmd == "reset" {
-		err = verifyDockerGroup()
-		if err == nil {
-			err = challengeReset([]string{})
 			if err == nil {
 				_ = printChallengeURLs()
 			}

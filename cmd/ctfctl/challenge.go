@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	goflag "flag"
@@ -297,10 +298,19 @@ func loadChallengeConfig() (challengeConfig, error) {
 }
 
 func saveChallengeConfig(cfg challengeConfig) error {
-	out, err := json.MarshalIndent(cfg, "", "  ")
+	var buf bytes.Buffer
+
+	encoder := json.NewEncoder(&buf)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+
+	err := encoder.Encode(cfg)
 	if err != nil {
 		return err
 	}
+
+	// json.Encoder.Encode adds a trailing newline — trim it so the file ends cleanly
+	out := bytes.TrimRight(buf.Bytes(), "\n")
 
 	err = os.WriteFile(challengeFile, out, 0644)
 	if err != nil {
@@ -340,49 +350,60 @@ func challengeShow(args []string) error {
 
 	c := cfg.Challenges[index]
 
-	fmt.Println("ID:         ", c.ID)
-	fmt.Println("Name:       ", c.Name)
-	fmt.Println("Description:", c.Description)
-	fmt.Println("Category:   ", c.Category)
-	fmt.Println("Points:     ", strconv.Itoa(c.Points))
-	fmt.Println("Image:      ", c.Image)
-	fmt.Println("Memory:     ", strconv.Itoa(c.Memory)+"MB")
+	fmt.Println()
+	fmt.Println(bold(c.Name) + " " + dim("("+c.ID+")"))
+	fmt.Println(strings.Repeat("-", 50))
+	fmt.Printf("  %-16s %s\n", "Category:", c.Category)
+	fmt.Printf("  %-16s %d pts\n", "Points:", c.Points)
+	fmt.Printf("  %-16s %s\n", "Description:", c.Description)
+	fmt.Printf("  %-16s %s\n", "Image:", c.Image)
+	fmt.Printf("  %-16s %dMB\n", "Memory:", c.Memory)
+
+	if len(c.Command) > 0 {
+		fmt.Printf("  %-16s %s\n", "Command:", strings.Join(c.Command, " "))
+	}
 
 	if c.Flag != nil {
-		fmt.Println("Flag type:  ", c.Flag.Type)
+		fmt.Printf("  %-16s %s\n", "Flag type:", c.Flag.Type)
 		if c.Flag.Type == "file" || c.Flag.Type == "" {
-			fmt.Println("Flag path:  ", c.Flag.Path)
-			fmt.Println("Flag owner: ", c.Flag.Owner)
-			fmt.Println("Flag perms: ", c.Flag.Permissions)
+			fmt.Printf("  %-16s %s\n", "Flag path:", c.Flag.Path)
+			fmt.Printf("  %-16s %s\n", "Flag owner:", c.Flag.Owner)
+			fmt.Printf("  %-16s %s\n", "Flag perms:", c.Flag.Permissions)
 		} else if c.Flag.Type == "sql" {
-			fmt.Println("DB engine:  ", c.Flag.Engine)
-			fmt.Println("DB user:    ", c.Flag.User)
-			fmt.Println("DB name:    ", c.Flag.Database)
-			fmt.Println("DB query:   ", c.Flag.Query)
-			fmt.Println("Ready URL:  ", c.Flag.ReadyURL)
-			fmt.Println("Init URL:   ", c.Flag.InitURL)
+			fmt.Printf("  %-16s %s\n", "DB engine:", c.Flag.Engine)
+			fmt.Printf("  %-16s %s\n", "DB user:", c.Flag.User)
+			fmt.Printf("  %-16s %s\n", "DB name:", c.Flag.Database)
+			fmt.Printf("  %-16s %s\n", "DB query:", c.Flag.Query)
+			fmt.Printf("  %-16s %s\n", "Ready URL:", c.Flag.ReadyURL)
+			fmt.Printf("  %-16s %s\n", "Init URL:", c.Flag.InitURL)
 		} else if c.Flag.Type == "api" {
-			fmt.Println("API URL:    ", c.Flag.URL)
-			fmt.Println("API method: ", c.Flag.Method)
-			fmt.Println("API body:   ", c.Flag.Body)
+			fmt.Printf("  %-16s %s\n", "API URL:", c.Flag.URL)
+			fmt.Printf("  %-16s %s\n", "API method:", c.Flag.Method)
+			fmt.Printf("  %-16s %s\n", "API body:", c.Flag.Body)
 		} else if c.Flag.Type == "env" {
-			fmt.Println("(flag injected via environment variable)")
+			fmt.Printf("  %-16s %s\n", "Flag:", "injected via environment variable")
 		}
 	}
 
-	if len(c.Command) > 0 {
-		fmt.Println("Command:    ", strings.Join(c.Command, " "))
-	}
 
-	fmt.Println("Ports:")
+
+	fmt.Printf("  %-16s", "Ports:")
 	if len(c.Ports) == 0 {
-		fmt.Println("  (none)")
-	}
-	for i := 0; i < len(c.Ports); i++ {
-		p := c.Ports[i]
-		fmt.Println(" ", strconv.Itoa(p.Internal), "->", strconv.Itoa(p.External))
+		fmt.Println(" (none)")
+	} else {
+		fmt.Println()
+		for i := 0; i < len(c.Ports); i++ {
+			p := c.Ports[i]
+			fmt.Printf("    %d -> %d\n", p.Internal, p.External)
+		}
 	}
 
+	if len(c.Ports) > 0 {
+		url := challengeURL(c, c.Ports[0], getHostName())
+		fmt.Printf("  %-16s %s\n", "URL:", url)
+	}
+
+	fmt.Println()
 	return nil
 }
 
@@ -392,11 +413,21 @@ func challengeList() error {
 		return err
 	}
 
-	for i := 0; i < len(cfg.Challenges); i++ {
-		c := cfg.Challenges[i]
-		fmt.Println(c.ID, "|", c.Name, "|", c.Points, "pts")
+	if len(cfg.Challenges) == 0 {
+		fmt.Println("No challenges configured.")
+		return nil
 	}
 
+	fmt.Println()
+	fmt.Printf("  %-20s %-30s %-10s %s\n", bold("ID"), bold("Name"), bold("Points"), bold("Category"))
+	fmt.Println("  " + strings.Repeat("-", 70))
+
+	for i := 0; i < len(cfg.Challenges); i++ {
+		c := cfg.Challenges[i]
+		fmt.Printf("  %-20s %-30s %-10d %s\n", c.ID, c.Name, c.Points, c.Category)
+	}
+
+	fmt.Println()
 	return nil
 }
 
@@ -732,13 +763,9 @@ func editPorts(current []port) []port {
 }
 
 func challengeEdit(args []string) error {
-	if len(args) == 0 {
-		return errors.New("usage: ctfctl challenge edit <id> [flags]")
-	}
-
-	id := args[0]
-
 	fs := goflag.NewFlagSet("challenge edit", goflag.ContinueOnError)
+
+	fsId := fs.String("id", "", "")
 
 	fsName := fs.String("name", "", "")
 	fsDescription := fs.String("description", "", "")
@@ -767,14 +794,33 @@ func challengeEdit(args []string) error {
 		return nil
 	})
 
-	err := fs.Parse(args[1:])
+	// If first arg looks like an ID (not a flag), consume it before parsing
+	remainingArgs := args
+	id := ""
+	if len(remainingArgs) > 0 && !strings.HasPrefix(remainingArgs[0], "-") {
+		id = remainingArgs[0]
+		remainingArgs = remainingArgs[1:]
+	}
+
+	err := fs.Parse(remainingArgs)
 	if err != nil {
 		return err
+	}
+
+	if *fsId != "" {
+		id = *fsId
 	}
 
 	cfg, err := loadChallengeConfig()
 	if err != nil {
 		return err
+	}
+
+	if id == "" {
+		id, err = pickChallenge(cfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	index := -1
@@ -880,29 +926,28 @@ func challengeEdit(args []string) error {
 	return nil
 }
 
-func challengeReset(args []string) error {
-	// No ID — reset all challenges
+func challengeReload(args []string) error {
+	// No ID — reload all challenges automatically without prompting
 	if len(args) == 0 {
 		err := runScript("scripts/terraform_destroy_challenges.sh", scriptFlags()...)
 		if err != nil {
 			return err
 		}
+
 		err = flagsEnsure()
 		if err != nil {
 			return err
 		}
-		err = flagsEnsure()
-		if err != nil {
-			return err
-		}
+
 		err = runScript("scripts/terraform_deploy.sh", scriptFlags()...)
 		if err != nil {
 			return err
 		}
+
 		return flagsInject()
 	}
 
-	// Specific challenge by ID
+	// Specific challenge by ID — reload just that one container
 	id := args[0]
 
 	cfg, err := loadChallengeConfig()
@@ -919,8 +964,7 @@ func challengeReset(args []string) error {
 	}
 
 	if !found {
-		fmt.Println("No challenge found with ID:", id)
-		return nil
+		return errors.New("no challenge found with ID: " + id)
 	}
 
 	target := "module.challenges.docker_container.challenge_containers[\"" + id + "\"]"
@@ -948,12 +992,85 @@ func challengeReset(args []string) error {
 	return flagsInject()
 }
 
+func pickChallenge(cfg challengeConfig) (string, error) {
+	if len(cfg.Challenges) == 0 {
+		return "", errors.New("no challenges found in config")
+	}
+
+	fmt.Println("Select a challenge:")
+	for i := 0; i < len(cfg.Challenges); i++ {
+		c := cfg.Challenges[i]
+		fmt.Printf("  %d) %s (%s)\n", i+1, c.Name, c.ID)
+	}
+
+	for {
+		fmt.Print("  Enter number: ")
+		line, _ := stdinReader.ReadString('\n')
+		input := strings.TrimSpace(line)
+
+		n, err := strconv.Atoi(input)
+		if err != nil || n < 1 || n > len(cfg.Challenges) {
+			fmt.Println("  Invalid selection, try again")
+			continue
+		}
+
+		return cfg.Challenges[n-1].ID, nil
+	}
+}
+
+func challengePull() error {
+	cfg, err := loadChallengeConfig()
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(cfg.Challenges); i++ {
+		c := cfg.Challenges[i]
+
+		if c.Image == "" {
+			fmt.Println("  Skipping", c.ID, "(no image configured)")
+			continue
+		}
+
+		fmt.Println("Pulling", c.Image, "...")
+		err = runCommand("docker", "pull", c.Image)
+		if err != nil {
+			fmt.Println("  Warning: failed to pull", c.Image+":", err)
+		}
+	}
+
+	return nil
+}
+
+func challengeHelp() {
+	fmt.Println(bold("ctfctl challenge") + " " + dim("(ch)"))
+	fmt.Println()
+	fmt.Println(bold("Usage:"))
+	fmt.Println("  ctfctl challenge <subcommand> [args]")
+	fmt.Println()
+	fmt.Println(bold("Subcommands:"))
+	fmt.Printf("  %-20s %s\n", "list", "List all challenges")
+	fmt.Printf("  %-20s %s\n", "show <id>", "Show details of a challenge")
+	fmt.Printf("  %-20s %s\n", "add", "Add a new challenge")
+	fmt.Printf("  %-20s %s\n", "edit [id]", "Edit a challenge (select from list if no ID given)")
+	fmt.Printf("  %-20s %s\n", "remove <id>", "Remove a challenge")
+	fmt.Printf("  %-20s %s\n", "reload [id]", "Destroy and redeploy all (or one) challenge container(s)")
+	fmt.Printf("  %-20s %s\n", "pull", "Pull Docker images for all challenges")
+	fmt.Printf("  %-20s %s\n", "help", "Show this message")
+}
+
 func challengeCommand(args []string) error {
 	if len(args) == 0 {
-		return errors.New("challenge subcommand required (list, add, remove, reset, edit)")
+		challengeHelp()
+		return errors.New("challenge subcommand required")
 	}
 
 	sub := args[0]
+
+	if sub == "help" || sub == "--help" || sub == "-h" {
+		challengeHelp()
+		return nil
+	}
 
 	if sub == "list" {
 		return challengeList()
@@ -971,13 +1088,17 @@ func challengeCommand(args []string) error {
 		return challengeRemove(args[1:])
 	}
 
-	if sub == "reset" {
-		return challengeReset(args[1:])
+	if sub == "reload" {
+		return challengeReload(args[1:])
+	}
+
+	if sub == "pull" {
+		return challengePull()
 	}
 
 	if sub == "edit" {
 		return challengeEdit(args[1:])
 	}
 
-	return errors.New("unknown challenge subcommand: " + sub)
+	return errors.New("unknown challenge subcommand: " + sub + " (run 'ctfctl challenge help' for usage)")
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -15,7 +16,7 @@ func shellQuote(s string) string {
 }
 
 func runCommand(name string, args ...string) error {
-	fmt.Println("$", name, args)
+	fmt.Println("$", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -32,7 +33,7 @@ func scriptFlags() []string {
 
 func runScript(script string, extraArgs ...string) error {
 	args := append([]string{script}, extraArgs...)
-	fmt.Println("$ bash", args)
+	fmt.Println("$ bash", strings.Join(args, " "))
 	cmd := exec.Command("bash", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -198,31 +199,80 @@ func getHostIP() string {
 	return "localhost"
 }
 
+// getHostName returns the machine's hostname if it resolves via DNS,
+// otherwise it falls back to the IP address. This way challenge URLs
+// work even when DNS is not configured for the host.
+func getHostName() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return getHostIP()
+	}
+
+	// Try to resolve the hostname via DNS
+	addrs, err := net.LookupHost(hostname)
+	if err != nil || len(addrs) == 0 {
+		return getHostIP()
+	}
+
+	return hostname
+}
+
+// challengeURL builds the access URL for a single port on a challenge.
+func challengeURL(c challenge, p port, hostName string) string {
+	path := c.Path
+	if path != "" && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	return "http://" + hostName + ":" + strconv.Itoa(p.External) + path
+}
+
 func status() error {
 	cfg, err := loadChallengeConfig()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Status:")
+	if len(cfg.Challenges) == 0 {
+		fmt.Println("No challenges configured.")
+		return nil
+	}
+
+	hostName := getHostName()
+
+	fmt.Println()
+	fmt.Println(bold("Challenge Status"))
+	fmt.Println("----------------------------------------")
+	fmt.Printf("  %-28s %-12s %s\n", "Challenge", "State", "URL")
 	fmt.Println("----------------------------------------")
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
 
-		out, err := exec.Command("docker", "inspect", "--format", "{{.State.Status}}", c.ID).Output()
+		out, inspectErr := exec.Command("docker", "inspect", "--format", "{{.State.Status}}", c.ID).Output()
 
 		state := ""
-		if err != nil {
-			state = "not found"
+		if inspectErr != nil {
+			state = dim("not deployed")
 		} else {
-			state = strings.TrimSpace(string(out))
+			raw := strings.TrimSpace(string(out))
+			if raw == "" {
+				state = dim("not deployed")
+			} else {
+				state = raw
+			}
 		}
 
-		fmt.Printf("%-30s %s\n", c.Name, state)
+		url := ""
+		if len(c.Ports) > 0 {
+			url = challengeURL(c, c.Ports[0], hostName)
+		}
+
+		fmt.Printf("  %-28s %-12s %s\n", c.Name, state, url)
 	}
 
 	fmt.Println("----------------------------------------")
+	fmt.Println()
 	return nil
 }
 
@@ -232,35 +282,20 @@ func printChallengeURLs() error {
 		return err
 	}
 
-	hostIP := getHostIP()
+	hostName := getHostName()
 
-	fmt.Println("")
-	fmt.Println("CTF Deployment Complete")
-	fmt.Println("")
-	fmt.Println("Challenges:")
+	fmt.Println()
+	fmt.Println(bold("CTF Deployment Complete"))
+	fmt.Println()
+	fmt.Println(bold("Challenges:"))
 	fmt.Println("----------------------------------------")
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
+
 		for j := 0; j < len(c.Ports); j++ {
-			p := c.Ports[j]
-
-			if p.External == 22 || p.External == 2222 {
-				fmt.Printf("%-30s ssh msfadmin@%s -p %d\n", c.Name, hostIP, p.External)
-				continue
-			}
-
-			url := "http://" + hostIP + ":" + strconv.Itoa(p.External)
-
-			if c.Path != "" {
-				if strings.HasPrefix(c.Path, "/") {
-					url = url + c.Path
-				} else {
-					url = url + "/" + c.Path
-				}
-			}
-
-			fmt.Printf("%-30s %s\n", c.Name, url)
+			url := challengeURL(c, c.Ports[j], hostName)
+			fmt.Printf("  %-28s %s\n", c.Name, url)
 		}
 	}
 
