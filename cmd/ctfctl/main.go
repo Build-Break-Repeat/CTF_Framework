@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const version = "1.0.4"
+const version = "1.0.5"
 
 var challengeFile = "config.json"
 var noColor bool
