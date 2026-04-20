@@ -926,10 +926,17 @@ func challengeEdit(args []string) error {
 	return nil
 }
 
+func reloadScriptFlags() []string {
+	flags := []string{"-n"}
+	if autoInstall {
+		flags = append(flags, "-a")
+	}
+	return flags
+}
+
 func challengeReload(args []string) error {
-	// No ID — reload all challenges automatically without prompting
 	if len(args) == 0 {
-		err := runScript("scripts/terraform_destroy_challenges.sh", scriptFlags()...)
+		err := runScript("scripts/terraform_destroy_challenges.sh", reloadScriptFlags()...)
 		if err != nil {
 			return err
 		}
@@ -939,7 +946,7 @@ func challengeReload(args []string) error {
 			return err
 		}
 
-		err = runScript("scripts/terraform_deploy.sh", scriptFlags()...)
+		err = runScript("scripts/terraform_deploy.sh", reloadScriptFlags()...)
 		if err != nil {
 			return err
 		}

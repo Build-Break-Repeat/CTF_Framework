@@ -283,6 +283,24 @@ func httpInit(url string, body string, tokenField string) error {
 	return fmt.Errorf("failed to initialize %s after several attempts", url)
 }
 
+// rewritePort replaces the port in any localhost URL with the challenge's first external port.
+func rewritePort(url string, c challenge) string {
+	if len(c.Ports) == 0 || url == "" {
+		return url
+	}
+	port := strconv.Itoa(c.Ports[0].External)
+	// Replace localhost:NNNN with the current external port
+	if idx := strings.Index(url, "localhost:"); idx != -1 {
+		start := idx + len("localhost:")
+		end := start
+		for end < len(url) && url[end] >= '0' && url[end] <= '9' {
+			end++
+		}
+		return url[:start] + port + url[end:]
+	}
+	return url
+}
+
 func injectSQL(c challenge, flag string) error {
 	f := c.Flag
 
@@ -290,17 +308,20 @@ func injectSQL(c challenge, flag string) error {
 		return fmt.Errorf("unknown sql engine %q - must be \"mysql\" or \"postgres\"", f.Engine)
 	}
 
+	readyURL := rewritePort(f.ReadyURL, c)
+	initURL := rewritePort(f.InitURL, c)
+
 	// Wait for the web app to be ready before trying to touch the database
-	if f.ReadyURL != "" {
-		err := waitForHTTP(f.ReadyURL, f.ReadyContains)
+	if readyURL != "" {
+		err := waitForHTTP(readyURL, f.ReadyContains)
 		if err != nil {
 			return fmt.Errorf("app never became ready: %w", err)
 		}
 	}
 
 	// Some apps need a setup step before the database tables exist (e.g. DVWA's setup.php)
-	if f.InitURL != "" {
-		err := httpInit(f.InitURL, f.InitBody, f.InitTokenField)
+	if initURL != "" {
+		err := httpInit(initURL, f.InitBody, f.InitTokenField)
 		if err != nil {
 			return fmt.Errorf("app init failed: %w", err)
 		}
@@ -351,6 +372,7 @@ func injectAPI(c challenge, flag string) error {
 		method = "POST"
 	}
 
+	apiURL := rewritePort(f.URL, c)
 	body := strings.ReplaceAll(f.Body, "%s", flag)
 
 	fmt.Println("  Waiting for API...")
@@ -359,7 +381,7 @@ func injectAPI(c challenge, flag string) error {
 
 	// Try up to 20 times in case the service is still starting up
 	for i := 0; i < 20; i++ {
-		req, err := http.NewRequest(method, f.URL, strings.NewReader(body))
+		req, err := http.NewRequest(method, apiURL, strings.NewReader(body))
 		if err != nil {
 			return err
 		}
