@@ -8,9 +8,10 @@ resource "ctfd_challenge_standard" "dynamic" {
   name     = each.key
   category = lookup(each.value, "category", "General")
   description = format(
-    "## %s\n\n%s",
+    "## %s\n\n%s%s",
     lookup(each.value, "name", each.key),
-    lookup(each.value, "description", "")
+    lookup(each.value, "description", ""),
+    lookup(each.value, "url", "") != "" ? "\n\n**URL:** ${lookup(each.value, "url", "")}" : ""
   )
   value = lookup(each.value, "points", 100)
 
