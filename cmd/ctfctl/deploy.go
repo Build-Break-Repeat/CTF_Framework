@@ -200,8 +200,7 @@ func getHostIP() string {
 }
 
 // getHostName returns the machine's hostname if it resolves via DNS,
-// otherwise it falls back to the IP address. This way challenge URLs
-// work even when DNS is not configured for the host.
+// otherwise it falls back to the IP address. 
 func getHostName() string {
 	hostname, err := os.Hostname()
 	if err != nil {
