@@ -227,6 +227,11 @@ func challengeURL(c challenge, p port, hostName string) string {
 }
 
 func status() error {
+	err := verifyDockerGroup()
+	if err != nil {
+		return err
+	}
+
 	cfg, err := loadChallengeConfig()
 	if err != nil {
 		return err
