@@ -1,6 +1,12 @@
 # Build Break Repeat - Infrastructure Foundation
 
+An IaC tool for deploying and managing a CTF competition environment on a single Linux host.
+
+### What does `ctfctl` do?
+`ctfctl` handles the full lifecycle of a CTF event. It spins up a CTFd scoreboard, deploys vulnerable challenge containers, generates and injects unique flags per team, and configures a firewall, all from a single command. When the event is over, it tears everything down for you just as easily.
+
 ## Requirements
+- Linux (CentOS/Ubuntu recommended)
 - Docker
 - Terraform
 - Git
@@ -8,40 +14,67 @@
 - Wget
 - Python 3
 
+Installing the basics:
 
-## Deploy
-./scripts/deploy.sh
+```bash
+sudo apt update
+sudo apt install git -y
+sudo apt install curl -y
+```
 
-## Destroy
-./scripts/destroy.sh
+## Setup
 
-## Flags
-Generate team-based flags:
-python3 scripts/createflags.py 3
-
-Generate team-based flags with a different preset:
-python3 scripts/createflags.py 3 --preset lab
-
-List available presets:
-python3 scripts/createflags.py --list-presets
-
-Inject generated flags into the running challenge containers:
-python3 scripts/injectflags.py
-
-Current workflow:
-1. Challenge names come from config.json.
-2. Generated files are written under flags/<challenge-name>.txt.
-3. injectflags.py copies those team files into matching Docker containers.
-4. By default, flags go to /flags inside each container.
-
-To run ctfctl:
+```bash
 git clone https://github.com/Build-Break-Repeat/CTF_Framework.git
 cd CTF_Framework
 bash init.sh
+```
 
+## Usage/Deployment
+
+```bash
+# Enter Sudo for Administrator Privilege
+sudo su
+
+# Deploy CTFCTL and Follow on Screen Prompts
 ./ctfctl deploy
+```
+
+## Additional Usage Commands
+
+```bash
+# Check running containers and their URLs
+./ctfctl status
+
+# Tear everything down
 ./ctfctl destroy
+
+# Destroy then redeploy
 ./ctfctl rebuild
-./ctfctl reset
-./ctfctl bootstrap
+```
+
+## Configuration
+
+Challenges and event settings are managed through `config.json`. Use the CLI to edit instead of editing the file directly:
+
+```bash
+# Add, edit, remove, or list challenges
+./ctfctl challenge add
 ./ctfctl challenge list
+./ctfctl challenge edit
+
+# View event settings
+./ctfctl event show
+
+# Edit event name, team count, admin credentials
+./ctfctl event edit
+```
+
+## Flags
+
+Flags are generated per team and injected automatically during `deploy`. To run manually:
+
+```bash
+./ctfctl flags generate
+./ctfctl flags inject
+```
