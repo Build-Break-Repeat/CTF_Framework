@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
-const version = "1.0.9"
+const version = "1.0.10"
 
 var challengeFile = "config.json"
 var noColor bool
@@ -70,7 +71,14 @@ func main() {
 				fmt.Fprintln(os.Stderr, "Error: --base-url requires a value")
 				os.Exit(1)
 			}
-			baseURL = os.Args[i]
+			raw := os.Args[i]
+			// Strip scheme so baseURL is always a plain hostname for URL building
+			if after, found := strings.CutPrefix(raw, "https://"); found {
+				raw = after
+			} else if after, found := strings.CutPrefix(raw, "http://"); found {
+				raw = after
+			}
+			baseURL = strings.TrimRight(raw, "/")
 			os.Setenv("TF_VAR_challenge_host", baseURL)
 		} else {
 			filteredArgs = append(filteredArgs, a)

@@ -14,7 +14,7 @@ cd "$TERRAFORM_DIR/challenges"
 terraform init -input=false -upgrade
 
 if $NON_INTERACTIVE || $AUTO_INSTALL; then
-	sudo terraform apply -auto-approve
+	sudo -E terraform apply -auto-approve
 else
-	sudo terraform apply
+	sudo -E terraform apply
 fi

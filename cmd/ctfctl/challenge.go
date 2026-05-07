@@ -418,13 +418,19 @@ func challengeList() error {
 		return nil
 	}
 
+	hostName := resolveHostName()
+
 	fmt.Println()
-	fmt.Printf("  %-20s %-30s %-10s %s\n", bold("ID"), bold("Name"), bold("Points"), bold("Category"))
-	fmt.Println("  " + strings.Repeat("-", 70))
+	fmt.Printf("  %-20s %-30s %-10s %-14s %s\n", bold("ID"), bold("Name"), bold("Points"), bold("Category"), bold("URL"))
+	fmt.Println("  " + strings.Repeat("-", 84))
 
 	for i := 0; i < len(cfg.Challenges); i++ {
 		c := cfg.Challenges[i]
-		fmt.Printf("  %-20s %-30s %-10d %s\n", c.ID, c.Name, c.Points, c.Category)
+		url := ""
+		if len(c.Ports) > 0 {
+			url = challengeURL(c, c.Ports[0], hostName)
+		}
+		fmt.Printf("  %-20s %-30s %-10d %-14s %s\n", c.ID, c.Name, c.Points, c.Category, url)
 	}
 
 	fmt.Println()
