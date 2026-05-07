@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const version = "1.0.8"
+const version = "1.0.9"
 
 var challengeFile = "config.json"
 var noColor bool
@@ -71,6 +71,7 @@ func main() {
 				os.Exit(1)
 			}
 			baseURL = os.Args[i]
+			os.Setenv("TF_VAR_challenge_host", baseURL)
 		} else {
 			filteredArgs = append(filteredArgs, a)
 		}

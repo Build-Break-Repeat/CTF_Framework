@@ -399,7 +399,7 @@ func challengeShow(args []string) error {
 	}
 
 	if len(c.Ports) > 0 {
-		url := challengeURL(c, c.Ports[0], getHostName())
+		url := challengeURL(c, c.Ports[0], resolveHostName())
 		fmt.Printf("  %-16s %s\n", "URL:", url)
 	}
 
