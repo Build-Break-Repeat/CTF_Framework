@@ -11,7 +11,7 @@ resource "ctfd_challenge_standard" "dynamic" {
     "## %s\n\n%s%s",
     lookup(each.value, "name", each.key),
     lookup(each.value, "description", ""),
-    lookup(each.value, "url", "") != "" ? "\n\n**URL:** ${lookup(each.value, "url", "")}" : ""
+    lookup(each.value, "url", "") != "" ? "\n\n[Open Challenge](${lookup(each.value, "url", "")})" : ""
   )
   value = lookup(each.value, "points", 100)
 

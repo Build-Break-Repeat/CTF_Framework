@@ -6,11 +6,12 @@ import (
 	"os"
 )
 
-const version = "1.0.7"
+const version = "1.0.8"
 
 var challengeFile = "config.json"
 var noColor bool
 var autoInstall bool
+var baseURL string
 
 func bold(s string) string {
 	if noColor {
@@ -30,12 +31,13 @@ func help() {
 	fmt.Println(bold("ctfctl") + " " + dim("v"+version))
 	fmt.Println()
 	fmt.Println(bold("Usage:"))
-	fmt.Println("  ctfctl [--no-color] [--version] [--auto-install] <command>")
+	fmt.Println("  ctfctl [--no-color] [--version] [--auto-install] [--base-url <url>] <command>")
 	fmt.Println()
 	fmt.Println(bold("Global flags:"))
 	fmt.Printf("  %-30s %s\n", "--no-color", "Disable ANSI color output")
 	fmt.Printf("  %-30s %s\n", "--version", "Print version and exit")
 	fmt.Printf("  %-30s %s\n", "--auto-install, -a", "Automatically install any missing dependencies")
+	fmt.Printf("  %-30s %s\n", "--base-url <url>", "Override the base hostname used in challenge URLs")
 	fmt.Println()
 	fmt.Println(bold("Commands:"))
 	fmt.Printf("  %-30s %s\n", "deploy", "Deploy everything (deps -> bootstrap -> challenges -> firewall)")
@@ -62,6 +64,13 @@ func main() {
 			os.Exit(0)
 		} else if a == "--auto-install" || a == "-a" {
 			autoInstall = true
+		} else if a == "--base-url" {
+			i++
+			if i >= len(os.Args) {
+				fmt.Fprintln(os.Stderr, "Error: --base-url requires a value")
+				os.Exit(1)
+			}
+			baseURL = os.Args[i]
 		} else {
 			filteredArgs = append(filteredArgs, a)
 		}

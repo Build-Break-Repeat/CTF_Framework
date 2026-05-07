@@ -221,6 +221,13 @@ func getHostName() string {
 	return hostname
 }
 
+func resolveHostName() string {
+	if baseURL != "" {
+		return baseURL
+	}
+	return getHostName()
+}
+
 // challengeURL builds the access URL for a single port on a challenge.
 func challengeURL(c challenge, p port, hostName string) string {
 	path := c.Path
@@ -247,7 +254,7 @@ func status() error {
 		return nil
 	}
 
-	hostName := getHostName()
+	hostName := resolveHostName()
 
 	fmt.Println()
 	fmt.Println(bold("Challenge Status"))
@@ -291,7 +298,7 @@ func printChallengeURLs() error {
 		return err
 	}
 
-	hostName := getHostName()
+	hostName := resolveHostName()
 
 	fmt.Println()
 	fmt.Println(bold("CTF Deployment Complete"))

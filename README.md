@@ -70,9 +70,20 @@ Challenges and event settings are managed through `config.json`. Use the CLI to 
 ./ctfctl event edit
 ```
 
+## Global Flags
+
+These flags can be passed before any command:
+
+| Flag | Description |
+|------|-------------|
+| `--no-color` | Disable ANSI color output |
+| `--auto-install`, `-a` | Automatically install any missing dependencies |
+| `--base-url <url>` | Override the base hostname used in challenge URLs (e.g. `--base-url challenges.example.com`) |
+| `--version` | Print version and exit |
+
 ## Flags
 
-Flags are generated per team and injected automatically during `deploy`. To run manually:
+Flags are generated and injected automatically during `deploy`. To run manually:
 
 ```bash
 ./ctfctl flags generate
