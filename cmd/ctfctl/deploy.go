@@ -184,7 +184,12 @@ func destroy() error {
 		return err
 	}
 
-	return runScript("scripts/terraform_destroy_bootstrap.sh", scriptFlags()...)
+	err = runScript("scripts/terraform_destroy_bootstrap.sh", scriptFlags()...)
+	if err != nil {
+		return err
+	}
+
+	return os.RemoveAll("flags")
 }
 
 func getHostIP() string {
