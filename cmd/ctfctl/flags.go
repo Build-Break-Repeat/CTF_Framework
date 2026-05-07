@@ -38,6 +38,16 @@ var flagNouns = []string{
 	"cell", "data", "event", "frame", "group", "heart", "image", "joint", "knife", "level",
 }
 
+func flagFilePerm(c challenge) os.FileMode {
+	if c.Flag != nil && c.Flag.Permissions != "" {
+		v, err := strconv.ParseUint(c.Flag.Permissions, 8, 32)
+		if err == nil {
+			return os.FileMode(v)
+		}
+	}
+	return 0600
+}
+
 func randIndex(n int) (int, error) {
 	max := big.NewInt(int64(n))
 	val, err := rand.Int(rand.Reader, max)
@@ -98,7 +108,7 @@ func flagsGenerate() error {
 		}
 
 		flagFile := "flags/" + c.ID + ".txt"
-		err = os.WriteFile(flagFile, []byte(flag+"\n"), 0600)
+		err = os.WriteFile(flagFile, []byte(flag+"\n"), flagFilePerm(c))
 		if err != nil {
 			return fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
 		}
@@ -444,7 +454,7 @@ func flagsEnsure() error {
 			return fmt.Errorf("failed to generate flag for %s: %w", c.ID, err)
 		}
 
-		err = os.WriteFile(flagFile, []byte(flag+"\n"), 0600)
+		err = os.WriteFile(flagFile, []byte(flag+"\n"), flagFilePerm(c))
 		if err != nil {
 			return fmt.Errorf("failed to write flag file for %s: %w", c.ID, err)
 		}
