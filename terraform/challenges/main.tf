@@ -13,8 +13,8 @@ locals {
     c.id => merge(c, {
       url = length(lookup(c, "ports", [])) > 0 ? (
         local.base_url != ""
-          ? "${local.base_url}:${c.ports[0].external}"
-          : "http://${var.challenge_host}:${c.ports[0].external}"
+        ? "${local.base_url}:${c.ports[0].external}"
+        : "http://${var.challenge_host}:${c.ports[0].external}"
       ) : ""
     })
   }
